@@ -1,0 +1,450 @@
+<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+    <!-- 先加载所有依赖库 -->
+    <!-- Marked -->
+    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/marked/4.0.2/marked.min.js"></script>
+
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.css">
+    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.js"></script>
+    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+
+    <!-- Highlight.js - 使用完整版而不是单独加载语言 -->
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github.min.css" id="light-theme">
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github-dark.min.css" id="dark-theme" disabled>
+    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/highlight.min.js"></script>
+    
+    <style>
+        /* 检测系统暗色模式 */
+        @media (prefers-color-scheme: dark) {
+            #light-theme { display: none; }
+            #dark-theme { display: block; }
+            
+            body {
+                background-color: #0d1117;
+                color: #c9d1d9;
+            }
+            
+            .card-content {
+                background-color: #0d1117;
+                color: #c9d1d9;
+            }
+            
+            .markdown-body {
+                color: #c9d1d9;
+            }
+            
+            .markdown-body code {
+                background-color: #161b22;
+            }
+            
+            .markdown-body pre {
+                background-color: #161b22;
+            }
+            
+            .markdown-body blockquote {
+                color: #8b949e;
+                border-left-color: #30363d;
+            }
+            
+            hr#answer {
+                background: #30363d;
+            }
+        }
+    </style>
+</head><body>
+<div class="card-content">
+  <div class="question markdown-body" id="question">{{Question}}</div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    // 检测暗色模式
+    const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDarkMode) {
+      document.getElementById('light-theme').disabled = true;
+      document.getElementById('dark-theme').disabled = false;
+      document.body.classList.add('dark-mode');
+    }
+    
+    // 获取问题内容
+    const questionElement = document.getElementById('question');
+    const questionContent = questionElement.innerHTML;
+    
+    // 使用marked解析Markdown，并配置代码高亮
+    marked.setOptions({
+      highlight: function(code, lang) {
+        try {
+          if (lang && hljs.getLanguage(lang)) {
+            return hljs.highlight(code, { language: lang }).value;
+          } else {
+            // 尝试自动检测语言
+            return hljs.highlightAuto(code).value;
+          }
+        } catch (e) {
+          console.error('高亮处理错误:', e);
+          return code; // 返回原始代码
+        }
+      }
+    });
+    
+    // 解析Markdown
+    questionElement.innerHTML = marked.parse(questionContent);
+    
+    // 渲染数学公式
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\[', right: '\\]', display: true},
+        {left: '\\(', right: '\\)', display: false}
+      ],
+      throwOnError: false
+    });
+    
+    // 手动处理未被marked处理的代码块
+    document.querySelectorAll('pre code').forEach((block) => {
+      // 检查是否已经高亮
+      if (!block.classList.contains('hljs')) {
+        // 尝试从class名称获取语言
+        const langMatch = block.className.match(/language-(\w+)/);
+        if (langMatch) {
+          try {
+            hljs.highlightElement(block);
+          } catch (e) {
+            console.error('高亮处理错误:', e);
+          }
+        } else {
+          // 尝试自动检测语言
+          try {
+            hljs.highlightAuto(block);
+            hljs.highlightElement(block);
+          } catch (e) {
+            console.error('自动高亮处理错误:', e);
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.error('处理内容时出错:', e);
+    // 在页面上显示错误信息，便于调试
+    const errorDiv = document.createElement('div');
+    errorDiv.style.color = 'red';
+    errorDiv.textContent = '处理内容时出错: ' + e.message;
+    document.body.appendChild(errorDiv);
+  }
+});
+</script></body></html>
+@@@@@
+<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+    <!-- 先加载所有依赖库 -->
+    <!-- Marked -->
+    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/marked/4.0.2/marked.min.js"></script>
+
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.css">
+    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.js"></script>
+    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+
+    <!-- Highlight.js - 使用完整版而不是单独加载语言 -->
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github.min.css" id="light-theme">
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github-dark.min.css" id="dark-theme" disabled>
+    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/highlight.min.js"></script>
+    <script>
+        // 格式化消息内容
+function formatMessage(content) {
+    if (!content) return '';
+    
+    try {
+        // 保存数学表达式
+        const mathExpressions = [];
+        let processedContent = content.replace(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g, (match, p1, offset) => {
+            mathExpressions.push(p1);
+            return `@@MATH_EXPR_${mathExpressions.length - 1}@@`;
+        });
+
+        // 使用 marked 处理 Markdown
+        processedContent = marked.parse(processedContent, {
+            mangle: false,
+            headerIds: false,
+            sanitize: false,
+            breaks: true,
+            gfm: true
+        });
+
+        // 恢复数学表达式
+        processedContent = processedContent.replace(/@@MATH_EXPR_(\d+)@@/g, (match, index) => {
+            return mathExpressions[parseInt(index)];
+        });
+
+        return processedContent;
+    } catch (e) {
+        console.error('Error formatting message:', e);
+        return content;
+    }
+}
+    </script>
+    <style>
+        /* 检测系统暗色模式 */
+        @media (prefers-color-scheme: dark) {
+            #light-theme { display: none; }
+            #dark-theme { display: block; }
+            
+            body {
+                background-color: #0d1117;
+                color: #c9d1d9;
+            }
+            
+            .card-content {
+                background-color: #0d1117;
+                color: #c9d1d9;
+            }
+            
+            .markdown-body {
+                color: #c9d1d9;
+            }
+            
+            .markdown-body code {
+                background-color: #161b22;
+            }
+            
+            .markdown-body pre {
+                background-color: #161b22;
+            }
+            
+            .markdown-body blockquote {
+                color: #8b949e;
+                border-left-color: #30363d;
+            }
+            
+            hr#answer {
+                background: #30363d;
+            }
+        }
+    </style>
+</head><body>
+<div class="card-content">
+  <div class="question markdown-body" id="question">{{Question}}</div>
+  <hr id="answer">
+  <div class="answer markdown-body" id="answer-content">{{Answer}}</div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    // 检测暗色模式
+    const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDarkMode) {
+      document.getElementById('light-theme').disabled = true;
+      document.getElementById('dark-theme').disabled = false;
+      document.body.classList.add('dark-mode');
+    }
+    
+    // 获取问题和答案内容
+    const questionElement = document.getElementById('question');
+    const answerElement = document.getElementById('answer-content');
+    
+    const questionContent = questionElement.innerHTML;
+    const answerContent = formatMessage(answerElement.innerHTML);
+    
+    // 使用marked解析Markdown，并配置代码高亮
+    marked.setOptions({
+      highlight: function(code, lang) {
+        try {
+          if (lang && hljs.getLanguage(lang)) {
+            return hljs.highlight(code, { language: lang }).value;
+          } else {
+            // 尝试自动检测语言
+            return hljs.highlightAuto(code).value;
+          }
+        } catch (e) {
+          console.error('高亮处理错误:', e);
+          return code; // 返回原始代码
+        }
+      }
+    });
+    
+    // 解析Markdown
+    questionElement.innerHTML = marked.parse(questionContent);
+    answerElement.innerHTML = marked.parse(answerContent);
+    
+    // 渲染数学公式
+    renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\[', right: '\\]', display: true},
+        {left: '\\(', right: '\\)', display: false}
+      ],
+      throwOnError: false
+    });
+    
+    // 手动处理未被marked处理的代码块
+    document.querySelectorAll('pre code').forEach((block) => {
+      // 检查是否已经高亮
+      if (!block.classList.contains('hljs')) {
+        // 尝试从class名称获取语言
+        const langMatch = block.className.match(/language-(\w+)/);
+        if (langMatch) {
+          try {
+            hljs.highlightElement(block);
+          } catch (e) {
+            console.error('高亮处理错误:', e);
+          }
+        } else {
+          // 尝试自动检测语言
+          try {
+            hljs.highlightAuto(block);
+            hljs.highlightElement(block);
+          } catch (e) {
+            console.error('自动高亮处理错误:', e);
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.error('处理内容时出错:', e);
+    // 在页面上显示错误信息，便于调试
+    const errorDiv = document.createElement('div');
+    errorDiv.style.color = 'red';
+    errorDiv.textContent = '处理内容时出错: ' + e.message;
+    document.body.appendChild(errorDiv);
+  }
+});
+</script></body></html>
+@@@@@
+.card { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif; 
+        font-size: 16px; line-height: 1.6; color: #24292e; padding: 16px; }
+
+.markdown-body { color: #24292e; line-height: 1.6; }
+.markdown-body p { margin: 8px 0; }
+.markdown-body code { padding: 0.2em 0.4em; background-color: #f6f8fa; 
+                     border-radius: 3px; font-size: 85%; }
+.markdown-body pre { background-color: #f6f8fa; border-radius: 6px; padding: 16px; 
+                    overflow: auto; font-size: 85%; line-height: 1.45; }
+.markdown-body pre code { padding: 0; background-color: transparent; }
+.markdown-body h1, .markdown-body h2, .markdown-body h3, 
+.markdown-body h4, .markdown-body h5, .markdown-body h6 
+{ margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; }
+.markdown-body h1 { font-size: 2em; }
+.markdown-body h2 { font-size: 1.5em; }
+.markdown-body h3 { font-size: 1.25em; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+.markdown-body blockquote { padding: 0 1em; color: #6a737d; 
+                           border-left: 0.25em solid #dfe2e5; }
+
+.latex-inline { font-size: 100%; }
+.latex-display { font-size: 120%; text-align: center; margin: 12px 0; }
+
+hr#answer { border: 0; height: 1px; background: #dfe2e5; margin: 16px 0; }
+
+.question { margin-bottom: 16px; }
+.answer { margin-top: 16px; }
+
+/* 详细的代码高亮样式 */
+.hljs { display: block; overflow-x: auto; padding: 1em; background: #f6f8fa; color: #24292e; }
+.hljs-keyword, .hljs-selector-tag, .hljs-subst { color: #d73a49; font-weight: bold; }
+.hljs-string, .hljs-doctag, .hljs-regexp { color: #032f62; }
+.hljs-title, .hljs-section, .hljs-selector-id { color: #6f42c1; font-weight: bold; }
+.hljs-comment { color: #6a737d; }
+.hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: #005cc5; }
+.hljs-tag, .hljs-name, .hljs-attr { color: #22863a; }
+.hljs-type, .hljs-class .hljs-title { color: #6f42c1; font-weight: bold; }
+.hljs-symbol, .hljs-bullet, .hljs-built_in, .hljs-builtin-name, .hljs-addition { color: #005cc5; }
+.hljs-meta { color: #6a737d; }
+.hljs-deletion { color: #b31d28; background-color: #ffeef0; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: bold; }
+
+/* 暗色模式样式 */
+.dark-mode, .nightMode {
+    background-color: #0d1117;
+    color: #c9d1d9;
+}
+
+.dark-mode .card, .nightMode .card {
+    color: #c9d1d9;
+    background-color: #0d1117;
+}
+
+.dark-mode .markdown-body, .nightMode .markdown-body {
+    color: #c9d1d9;
+}
+
+.dark-mode .markdown-body code, .nightMode .markdown-body code {
+    background-color: #161b22;
+}
+
+.dark-mode .markdown-body pre, .nightMode .markdown-body pre {
+    background-color: #161b22;
+}
+
+.dark-mode .markdown-body blockquote, .nightMode .markdown-body blockquote {
+    color: #8b949e;
+    border-left-color: #30363d;
+}
+
+.dark-mode hr#answer, .nightMode hr#answer {
+    background: #30363d;
+}
+
+/* 暗色模式下的代码高亮 */
+.dark-mode .hljs, .nightMode .hljs {
+    background: #161b22;
+    color: #c9d1d9;
+}
+
+.dark-mode .hljs-keyword, .dark-mode .hljs-selector-tag, .dark-mode .hljs-subst,
+.nightMode .hljs-keyword, .nightMode .hljs-selector-tag, .nightMode .hljs-subst {
+    color: #ff7b72;
+    font-weight: bold;
+}
+
+.dark-mode .hljs-string, .dark-mode .hljs-doctag, .dark-mode .hljs-regexp,
+.nightMode .hljs-string, .nightMode .hljs-doctag, .nightMode .hljs-regexp {
+    color: #a5d6ff;
+}
+
+.dark-mode .hljs-title, .dark-mode .hljs-section, .dark-mode .hljs-selector-id,
+.nightMode .hljs-title, .nightMode .hljs-section, .nightMode .hljs-selector-id {
+    color: #d2a8ff;
+    font-weight: bold;
+}
+
+.dark-mode .hljs-comment, .nightMode .hljs-comment {
+    color: #8b949e;
+}
+
+.dark-mode .hljs-number, .dark-mode .hljs-literal, .dark-mode .hljs-variable,
+.dark-mode .hljs-template-variable, .dark-mode .hljs-tag .hljs-attr,
+.nightMode .hljs-number, .nightMode .hljs-literal, .nightMode .hljs-variable,
+.nightMode .hljs-template-variable, .nightMode .hljs-tag .hljs-attr {
+    color: #79c0ff;
+}
+
+.dark-mode .hljs-tag, .dark-mode .hljs-name, .dark-mode .hljs-attr,
+.nightMode .hljs-tag, .nightMode .hljs-name, .nightMode .hljs-attr {
+    color: #7ee787;
+}
+
+.dark-mode .hljs-type, .dark-mode .hljs-class .hljs-title,
+.nightMode .hljs-type, .nightMode .hljs-class .hljs-title {
+    color: #d2a8ff;
+    font-weight: bold;
+}
+
+.dark-mode .hljs-symbol, .dark-mode .hljs-bullet, .dark-mode .hljs-built_in,
+.dark-mode .hljs-builtin-name, .dark-mode .hljs-addition,
+.nightMode .hljs-symbol, .nightMode .hljs-bullet, .nightMode .hljs-built_in,
+.nightMode .hljs-builtin-name, .nightMode .hljs-addition {
+    color: #79c0ff;
+}
+
+.dark-mode .hljs-meta, .nightMode .hljs-meta {
+    color: #8b949e;
+}
+
+.dark-mode .hljs-deletion, .nightMode .hljs-deletion {
+    color: #ffa198;
+    background-color: #490202;
+}

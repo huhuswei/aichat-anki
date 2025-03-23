@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    
+    <item
+        android:id="@+id/action_settings"
+        android:title="服务器设置"
+        android:icon="@android:drawable/ic_menu_manage"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/action_prompts"
+        android:title="提示词管理"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_update_anki_template"
+        android:title="新增Anki模板"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_theme"
+        android:title="切换主题"
+        app:showAsAction="never"/>
+
+</menu> 

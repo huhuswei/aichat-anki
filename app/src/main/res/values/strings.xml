@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI Anki Helper</string>
+    <string name="dark_mode_system">系统</string>
+    <string name="dark_mode_light">浅色</string>
+    <string name="dark_mode_dark">深色</string>
+    <string name="permission_denied">本应用需要取得读写Ankidroid数据库的权限才能正常工作！请在本应用权限设置中打开“读写Ankidroid数据库”这个选项。点击确定立即跳转到应用设置界面。</string>
+    <string-array name="format_options">
+        <item>Markdown</item>
+        <item>HTML</item>
+    </string-array>
+</resources> 

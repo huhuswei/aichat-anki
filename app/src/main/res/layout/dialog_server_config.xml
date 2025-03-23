@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/serverName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="服务器名称"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/baseUrl"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Base URL"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/apiKey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="API Key"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/models"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="模型列表（用分号分隔）"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/temperature"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Temperature (0.0-1.0)"
+        android:inputType="numberDecimal"
+        android:layout_marginBottom="8dp"/>
+
+</LinearLayout> 

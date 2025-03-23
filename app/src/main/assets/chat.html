@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 聊天</title>
+
+    <!-- 先加载所有依赖库 -->
+    <!-- Marked -->
+    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/marked/4.0.2/marked.min.js"></script>
+
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.css">
+    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.js"></script>
+    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+
+    <!-- Highlight.js -->
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github.min.css">
+    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/highlight.min.js"></script>
+    <!-- 添加常用语言支持 -->
+    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/java.min.js"></script>
+    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/python.min.js"></script>
+    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/javascript.min.js"></script>
+    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/xml.min.js"></script>
+    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/bash.min.js"></script>
+    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/json.min.js"></script>
+
+    <link rel="stylesheet" href="chat.css">
+
+    <script>
+        // 初始化检查
+        window.addEventListener('load', function() {
+            console.log('Window loaded');
+            if (typeof katex === 'undefined') {
+                console.error('KaTeX not loaded');
+            } else {
+                console.log('KaTeX loaded');
+            }
+            if (typeof marked === 'undefined') {
+                console.error('Marked not loaded');
+            } else {
+                console.log('Marked loaded');
+            }
+        });
+    </script>
+    
+    <style>
+
+    </style>
+</head>
+<body>
+    <div id="chat-container"></div>
+    <div id="input-container">
+        <div class="input-area">
+            <textarea id="message-input" placeholder="输入消息..." rows="1"></textarea>
+            <div class="button-container">
+                <button id="send-button" class="action-button">发送</button>
+                <button id="interruptBtn" class="action-button interrupt-btn" style="display: none;">停止生成</button>
+            </div>
+        </div>
+        <div class="button-group">
+            <button id="new-session-btn" class="session-btn">新会话</button>
+            <button id="show-sessions-btn" class="session-btn">历史会话</button>
+            <button id="toggle-mode-button" class="session-btn">
+                <span id="mode-indicator">多轮对话</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 修改会话列表对话框 -->
+    <div id="sessions-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">历史会话</h3>
+            <button class="modal-close">&times;</button>
+            <div class="search-box">
+                <input type="text" id="session-search" placeholder="搜索会话...">
+            </div>
+            <div id="sessions-list"></div>
+        </div>
+    </div>
+
+    <script src="chat.js"></script>
+</body>
+</html> 

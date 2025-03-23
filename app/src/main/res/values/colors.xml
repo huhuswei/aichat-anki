@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="purple_200">#BB86FC</color>
+    <color name="crane_button_focus">#8f0000</color>
+    <color name="crane_color_accent">#f60000</color>
+    <color name="crane_color_primary">#7d005c</color>
+    <color name="crane_color_primary_dark">#57003a</color>
+    <color name="crane_swl_color_1">#99f60000</color>
+    <color name="crane_swl_color_2">#BFf60000</color>
+    <color name="crane_swl_color_3">#CCf60000</color>
+    <color name="crane_swl_color_4">#E6f60000</color>
+    <color name="crane_swl_color_5">#f60000</color>
+    <color name="crane_textColor_Primary">#fff</color>
+    <color name="crane_text_color">#fff</color>
+    <color name="rail_button_focus">#01714b</color>
+    <color name="rail_color_accent">#00c381</color>
+    <color name="rail_color_primary">#434150</color>
+    <color name="rail_color_primary_dark">#27262f</color>
+    <color name="rail_swl_color_1">#9900C381</color>
+    <color name="rail_swl_color_2">#BF00C381</color>
+    <color name="rail_swl_color_3">#CC00C381</color>
+    <color name="rail_swl_color_4">#E600C381</color>
+    <color name="rail_swl_color_5">#00c381</color>
+    <color name="rail_textColor_Primary">#fff</color>
+    <color name="rail_text_color">#fff</color>
+    <color name="reply_button_focus">#865900</color>
+    <color name="reply_color_accent">#ffa900</color>
+    <color name="reply_color_primary">#304956</color>
+    <color name="reply_color_primary_dark">#446576</color>
+    <color name="reply_swl_color_1">#99ffa900</color>
+    <color name="reply_swl_color_2">#BFffa900</color>
+    <color name="reply_swl_color_3">#CCffa900</color>
+    <color name="reply_swl_color_4">#E6ffa900</color>
+    <color name="reply_swl_color_5">#ffa900</color>
+    <color name="reply_textColor_Primary">#fff</color>
+    <color name="reply_text_color">#fff</color>
+    <color name="shrine_button_focus">#301b1e</color>
+    <color name="shrine_color_accent">#48282c</color>
+    <color name="shrine_color_primary">#ffd9cd</color>
+    <color name="shrine_color_primary_dark">#dfc3c2</color>
+    <color name="shrine_swl_color_1">#99ffd9cd</color>
+    <color name="shrine_swl_color_2">#BFffd9cd</color>
+    <color name="shrine_swl_color_3">#CC48282c</color>
+    <color name="shrine_swl_color_4">#E648282c</color>
+    <color name="shrine_swl_color_5">#48282c</color>
+    <color name="shrine_textColor_Primary">#fff</color>
+    <color name="shrine_text_color">#48282c</color>
+
+    <color name="bubble_user_color">#e3f2fd</color>
+    <color name="wv_input_container_bg_dark">#1c1c1e</color>
+    <color name="wv_message_input_bg_dark">#2c2c2e</color>
+    <color name="wv_action_button_bg_dark">#3c3c3e</color>
+    <color name="wv_chat_container_bg">#f0f2f5</color>
+
+    <!--<color name="colorPrimary">#3F51B5</color>-->
+    <!--<color name="colorPrimaryDark">#303F9F</color>-->
+    <color name="colorPrimary">#227D51</color>
+    <color name="colorPrimaryDark">#2D6D4B</color>
+    <!--<color name="colorAccent">#FF4081</color>-->
+    <color name="colorAccent">#3B9465</color>
+
+    <color name="colorPrimaryPink">#e39090</color>
+    <color name="colorPrimaryDarkPink">#e68080</color>
+    <!--<color name="colorAccent">#FF4081</color>-->
+    <color name="colorAccentPink">#EE9898</color>
+
+    <color name="colorPrimaryBlue">#5387ED</color>
+    <color name="colorPrimaryDarkBlue">#4773CA</color>
+    <!--<color name="colorAccent">#FF4081</color>-->
+    <color name="colorAccentBlue">#588EF8</color>
+
+    <color name="textColor">#fff</color>
+    <color name="textColorPink">#fff</color>
+    <color name="textColorBlue">#fff</color>
+
+    <color name="primary_text">#212121</color>
+    <color name="secondary_text">#727272</color>
+
+    <color name="transparent">#00000000</color>
+    <color name="popup_transparent">#F5F5F6F7</color>
+    <color name="popup_background">#9AE0E0E0</color>
+    <color name="popup_background_pink">#9AE1BCBC</color>
+    <color name="popup_background_blue">#9AB3C0DA</color>
+
+    <color name="divider">#cee9e9e9</color>
+
+    <color name="footer_background">#E0E0E0</color>
+    <color name="footer_background_pink">#e1bcbc</color>
+    <color name="footer_background_blue">#B3C0DA</color>
+
+    <color name="green_container">#B2CFC3</color>
+    <color name="footer_pressed">#4f8069</color>
+    <color name="footer_pressed_pink">#c5a4a4</color>
+    <color name="footer_pressed_blue">#B6C2D8</color>
+
+    <color name="btn_down">#4D227D51</color>
+    <color name="btn_down_pink">#4DE39090</color>
+    <color name="btn_down_blue">#4D5387ED</color>
+
+    <color name="bottom_panel_icon">#808080</color>
+
+    <color name="shadow">#C7D7E2</color>
+    <color name="golden">#FAC000</color>
+    <color name="orange">#FF9400</color>
+</resources> 
