@@ -12,7 +12,7 @@ public class Message {
     public Message(String role, String content) {
         this.role = role;
         this.content = content;
-        this.id = role + "_" + SystemClock.elapsedRealtime() + "_" + (++counter);
+        this.id = role + "_" + System.currentTimeMillis() + "_" + (++counter);
         this.prompt = "";
         System.out.println("创建新消息: ID=" + this.id + ", Role=" + role);  // 添加日志
     }
@@ -20,7 +20,7 @@ public class Message {
     public Message(String role, String content, String prompt) {
         this.role = role;
         this.content = content;
-        this.id = role + "_" + SystemClock.elapsedRealtime() + "_" + (++counter);
+        this.id = role + "_" + System.currentTimeMillis() + "_" + (++counter);
         this.prompt = prompt;
         System.out.println("从数据库加载消息: ID=" + id + ", Role=" + role);  // 添加日志
     }

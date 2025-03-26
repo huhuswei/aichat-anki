@@ -13,7 +13,7 @@ public class AIServerConfig {
 
     public AIServerConfig() {
         // 修改默认值
-        this.id = String.valueOf(SystemClock.elapsedRealtime());//System.currentTimeMillis());
+        this.id = String.valueOf(System.currentTimeMillis());//System.currentTimeMillis());
         this.name = "硅基流动";
         this.baseUrl = "https://api.siliconflow.cn/";
         this.apiKey = "";

@@ -94,7 +94,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             ContentValues sessionValues = new ContentValues();
             sessionValues.put(COLUMN_SESSION_ID, session.getId());
             sessionValues.put(COLUMN_SESSION_TITLE, session.getTitle());
-            sessionValues.put(COLUMN_SESSION_TIMESTAMP, SystemClock.elapsedRealtime());  // 更新时间戳
+            sessionValues.put(COLUMN_SESSION_TIMESTAMP, System.currentTimeMillis());  // 更新时间戳
             db.insertWithOnConflict(TABLE_SESSIONS, null, sessionValues, SQLiteDatabase.CONFLICT_REPLACE);
 
             // 先删除该会话的所有旧消息
@@ -108,7 +108,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 messageValues.put(COLUMN_MESSAGE_SESSION_ID, session.getId());
                 messageValues.put(COLUMN_MESSAGE_ROLE, message.getRole());
                 messageValues.put(COLUMN_MESSAGE_CONTENT, message.getContent());
-                messageValues.put(COLUMN_MESSAGE_TIMESTAMP, SystemClock.elapsedRealtime());
+                messageValues.put(COLUMN_MESSAGE_TIMESTAMP, System.currentTimeMillis());
                 messageValues.put(COLUMN_MESSAGE_ANKI_NOTE_ID, message.getAnkiNoteId());
                 db.insert(TABLE_MESSAGES, null, messageValues);
             }

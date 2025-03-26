@@ -1062,7 +1062,7 @@ public class ChatService {
                     // 这里我们采用一个变通方法：创建一个新模型，然后将所有笔记迁移到新模型
                     
 //                    // 创建一个临时模型名称，确保不会与现有模型冲突
-//                    String tempModelName = "AI Chat Temp " + SystemClock.elapsedRealtime();
+//                    String tempModelName = "AI Chat Temp " + System.currentTimeMillis();
 //
 //                    // 创建新模型
 //                    long newModelId = ankiApi.addNewCustomModel(

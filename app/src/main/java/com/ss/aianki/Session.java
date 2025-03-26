@@ -12,8 +12,8 @@ public class Session {
     private List<Message> messages;
 
     public Session(String firstQuestion) {
-        this.id = String.valueOf(SystemClock.elapsedRealtime());
-        this.timestamp = SystemClock.elapsedRealtime();
+        this.id = String.valueOf(System.currentTimeMillis());
+        this.timestamp = System.currentTimeMillis();
         this.messages = new ArrayList<>();
         // 取前10个字符作为标题，如果不足10个字符则全部使用
         String escapedTitle = firstQuestion.replace("&", "&amp;")
@@ -33,7 +33,7 @@ public class Session {
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
                 .replace("'", "&#39;");
-        this.timestamp = SystemClock.elapsedRealtime();
+        this.timestamp = System.currentTimeMillis();
         this.messages = new ArrayList<>();
     }
 
