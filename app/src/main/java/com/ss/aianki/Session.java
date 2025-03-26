@@ -1,5 +1,6 @@
 package com.ss.aianki;
 
+import android.annotation.SuppressLint;
 import android.os.SystemClock;
 
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ public class Session {
     private long timestamp;
     private List<Message> messages;
 
+    @SuppressLint("DirectSystemCurrentTimeMillisUsage")
     public Session(String firstQuestion) {
         this.id = String.valueOf(System.currentTimeMillis());
         this.timestamp = System.currentTimeMillis();
@@ -26,6 +28,7 @@ public class Session {
                 escapedTitle;
     }
 
+    @SuppressLint("DirectSystemCurrentTimeMillisUsage")
     public Session(String id, String title) {
         this.id = id;
         this.title = title.replace("&", "&amp;")

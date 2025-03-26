@@ -1,5 +1,6 @@
 package com.ss.aianki;
 
+import android.annotation.SuppressLint;
 import android.os.SystemClock;
 
 public class AIServerConfig {
@@ -11,6 +12,7 @@ public class AIServerConfig {
     private float temperature;
     private String lastSelectedModel;  // 添加最后选择的模型字段
 
+    @SuppressLint("DirectSystemCurrentTimeMillisUsage")
     public AIServerConfig() {
         // 修改默认值
         this.id = String.valueOf(System.currentTimeMillis());//System.currentTimeMillis());

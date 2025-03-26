@@ -1,5 +1,6 @@
 package com.ss.aianki;
 
+import android.annotation.SuppressLint;
 import android.os.SystemClock;
 
 public class Message {
@@ -9,6 +10,7 @@ public class Message {
     private Long ankiNoteId;  // 添加 Anki 笔记 ID
     private static long counter = 0;
     private String prompt;
+    @SuppressLint("DirectSystemCurrentTimeMillisUsage")
     public Message(String role, String content) {
         this.role = role;
         this.content = content;
@@ -17,6 +19,7 @@ public class Message {
         System.out.println("创建新消息: ID=" + this.id + ", Role=" + role);  // 添加日志
     }
 
+    @SuppressLint("DirectSystemCurrentTimeMillisUsage")
     public Message(String role, String content, String prompt) {
         this.role = role;
         this.content = content;

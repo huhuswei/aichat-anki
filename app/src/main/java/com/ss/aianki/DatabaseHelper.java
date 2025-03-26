@@ -1,5 +1,6 @@
 package com.ss.aianki;
 
+import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -86,6 +87,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // 保存会话
+    @SuppressLint("DirectSystemCurrentTimeMillisUsage")
     public void saveSession(Session session) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.beginTransaction();
