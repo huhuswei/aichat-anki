@@ -311,12 +311,24 @@ function addMessageToUI(message) {
                 ],
                 throwOnError: false
             });
-            
+
+            try {
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.run();  // 或使用
+                    mermaid.contentLoaded();
+                    console.log('Mermaid running');
+                } else {
+                    console.log('Mermaid down');
+                }
+            } catch (e) {
+                console.log('Error initializing mermaid:', e);
+            }
+
             // 处理代码高亮
             contentDiv.querySelectorAll('pre code').forEach((block) => {
                 hljs.highlightElement(block);
             });
-            
+
             // 更新原始内容属性
             messageDiv.setAttribute('data-raw-content', newContent);
             
@@ -363,6 +375,18 @@ function addMessageToUI(message) {
             strict: false
         });
     }
+
+        try {
+            if (typeof mermaid !== 'undefined') {
+                mermaid.run();  // 或使用
+                mermaid.contentLoaded();
+                console.log('Mermaid running');
+            } else {
+                console.log('Mermaid down');
+            }
+        } catch (e) {
+            console.log('Error initializing mermaid:', e);
+        }
     
     console.log('Created new message element:', messageId);
     scrollToBottom();
@@ -493,13 +517,19 @@ function formatMessage(content) {
     try {
         // Replace <think> tags with details/summary
         content = content.replace(/<think>([\s\S]*?)<\/think>/g, "<details markdown='1'><summary>think</summary>$1</details>");
-        
+
         // Save math expressions
         const mathExpressions = [];
-        let processedContent = content.replace(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g, (match, p1, offset) => {
-            mathExpressions.push(p1);
-            return `@@MATH_EXPR_${mathExpressions.length - 1}@@`;
-        });
+        const preserved = { mermaid: [], latex: [], code: [] };
+        let processedContent = content
+            .replace(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g, (match, p1, offset) => {
+                preserved.latex.push(p1);
+                return `@@MATH_EXPR_${preserved.latex.length - 1}@@`;
+            })
+            .replace(/```mermaid\s*?\n([\s\S]*?)```/g, (_, code) => {
+                          preserved.mermaid.push(code.trim());
+                          return `Ⓜ️${preserved.mermaid.length-1}Ⓜ️`;
+                        });
 
         // Use marked to process Markdown
         processedContent = marked.parse(processedContent, {
@@ -511,10 +541,15 @@ function formatMessage(content) {
         });
 
         // Restore math expressions
-        processedContent = processedContent.replace(/@@MATH_EXPR_(\d+)@@/g, (match, index) => {
-            return mathExpressions[parseInt(index)];
-        });
+        processedContent = processedContent
+            .replace(/@@MATH_EXPR_(\d+)@@/g, (match, index) => {
+                return preserved.latex[parseInt(index)];
+            })
+            .replace(/Ⓜ️(\d+)Ⓜ️/g, (_, id) =>
+                          `<pre class="mermaid">${preserved.mermaid[id]}</pre>`);
 
+        console.log("Mermaid " + processedContent);
+        console.log("Mermaid " + processedContent);
         return processedContent;
     } catch (e) {
         console.error('Error formatting message:', e);
@@ -815,7 +850,19 @@ function updateMessageContent(messageId, content) {
                 output: 'html',
                 strict: false
             });
-            
+
+            try {
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.run();  // 或使用
+                    mermaid.contentLoaded();
+                    console.log('Mermaid running');
+                } else {
+                    console.log('Mermaid down');
+                }
+            } catch (e) {
+                console.log('Error initializing mermaid:', e);
+            }
+
             // 处理代码高亮
             contentDiv.querySelectorAll('pre code').forEach((block) => {
                 hljs.highlightElement(block);
@@ -877,6 +924,18 @@ function onResponseComplete() {
                 output: 'html',
                 strict: false
             });
+
+            try {
+                if (typeof mermaid !== 'undefined') {
+                    mermaid.run();  // 或使用
+                    mermaid.contentLoaded();
+                    console.log('Mermaid running');
+                } else {
+                    console.log('Mermaid down');
+                }
+            } catch (e) {
+                console.log('Error initializing mermaid:', e);
+            }
             
             // Update the raw content attribute
             messageDiv.setAttribute('data-raw-content', updatedContent);

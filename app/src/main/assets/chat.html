@@ -24,6 +24,7 @@
     <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/xml.min.js"></script>
     <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/bash.min.js"></script>
     <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.3.1/dist/mermaid.min.js"></script>
 
     <link rel="stylesheet" href="chat.css">
 
@@ -40,6 +41,17 @@
                 console.error('Marked not loaded');
             } else {
                 console.log('Marked loaded');
+            }
+            if (typeof mermaid === 'undefined') {
+                console.error('Mermaid not loaded');
+            } else {
+              mermaid.initialize({
+                startOnLoad: true,
+                securityLevel: 'loose',
+                flowchart: { curve: 'basis' }
+              });
+              mermaid.init();
+                console.log('Mermaid loaded');
             }
         });
     </script>
