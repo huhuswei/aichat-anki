@@ -1,450 +1,335 @@
-<!DOCTYPE html><html><head>
-<meta charset="UTF-8">
-    <!-- 先加载所有依赖库 -->
-    <!-- Marked -->
-    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/marked/4.0.2/marked.min.js"></script>
-
-    <!-- KaTeX -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 前端模板 -->
+</head>
+<body>
+<div class="card">
+    <div class="markdown-body" id="question">{{Question}}</div>
+</div>
+</body>
+</html>
+@@@@@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 样式和依赖 -->
     <link rel="stylesheet" href="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.css">
-    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.js"></script>
-    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
-
-    <!-- Highlight.js - 使用完整版而不是单独加载语言 -->
-    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github.min.css" id="light-theme">
-    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github-dark.min.css" id="dark-theme" disabled>
-    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/highlight.min.js"></script>
-    
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/monokai.css" id="hljs-light">
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/monokai-sublime.css" id="hljs-dark" disabled>
     <style>
-        /* 检测系统暗色模式 */
-        @media (prefers-color-scheme: dark) {
-            #light-theme { display: none; }
-            #dark-theme { display: block; }
-            
-            body {
-                background-color: #0d1117;
-                color: #c9d1d9;
-            }
-            
-            .card-content {
-                background-color: #0d1117;
-                color: #c9d1d9;
-            }
-            
-            .markdown-body {
-                color: #c9d1d9;
-            }
-            
-            .markdown-body code {
-                background-color: #161b22;
-            }
-            
-            .markdown-body pre {
-                background-color: #161b22;
-            }
-            
-            .markdown-body blockquote {
-                color: #8b949e;
-                border-left-color: #30363d;
-            }
-            
-            hr#answer {
-                background: #30363d;
-            }
+        .hljs-ln-numbers {
+          text-align: right;
+          padding-right: 15px;
+          color: #999;
+          border-right: 1px solid #ddd;
+          user-select: none;
         }
     </style>
-</head><body>
-<div class="card-content">
-  <div class="question markdown-body" id="question">{{Question}}</div>
+</head>
+<body>
+<div class="card">
+    {{FrontSide}}
+    <hr class="answer-divider">
+    <div class="markdown-body" id="answer">{{Answer}}</div>
+
+    <!-- 加载状态 -->
+    <div id="loading" style="display:none;">
+        <div class="loader"></div>
+        <p>内容渲染中...</p>
+    </div>
 </div>
+
+<!-- 资源加载顺序优化 -->
+<!-- Highlight.js - 使用完整版而不是单独加载语言 -->
+<script src="https://g.alicdn.com/code/lib/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.9.0/highlightjs-line-numbers.min.js"></script>
+<script src="https://g.alicdn.com/code/lib/marked/4.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.3.1/dist/mermaid.min.js"></script>
+<script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+
+<!--<script src="-->
+<!--https://g.alicdn.com/code/lib/mermaid/10.2.0/mermaid.min.js-->
+<!--"></script>-->
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  try {
-    // 检测暗色模式
-    const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (prefersDarkMode) {
-      document.getElementById('light-theme').disabled = true;
-      document.getElementById('dark-theme').disabled = false;
-      document.body.classList.add('dark-mode');
-    }
-    
-    // 获取问题内容
-    const questionElement = document.getElementById('question');
-    const questionContent = questionElement.innerHTML;
-    
-    // 使用marked解析Markdown，并配置代码高亮
-    marked.setOptions({
-      highlight: function(code, lang) {
-        try {
-          if (lang && hljs.getLanguage(lang)) {
-            return hljs.highlight(code, { language: lang }).value;
-          } else {
-            // 尝试自动检测语言
-            return hljs.highlightAuto(code).value;
-          }
-        } catch (e) {
-          console.error('高亮处理错误:', e);
-          return code; // 返回原始代码
-        }
-      }
-    });
-    
-    // 解析Markdown
-    questionElement.innerHTML = marked.parse(questionContent);
-    
-    // 渲染数学公式
-    renderMathInElement(document.body, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '$', right: '$', display: false},
-        {left: '\\[', right: '\\]', display: true},
-        {left: '\\(', right: '\\)', display: false}
-      ],
-      throwOnError: false
-    });
-    
-    // 手动处理未被marked处理的代码块
-    document.querySelectorAll('pre code').forEach((block) => {
-      // 检查是否已经高亮
-      if (!block.classList.contains('hljs')) {
-        // 尝试从class名称获取语言
-        const langMatch = block.className.match(/language-(\w+)/);
-        if (langMatch) {
-          try {
-            hljs.highlightElement(block);
-          } catch (e) {
-            console.error('高亮处理错误:', e);
-          }
-        } else {
-          // 尝试自动检测语言
-          try {
-            hljs.highlightAuto(block);
-            hljs.highlightElement(block);
-          } catch (e) {
-            console.error('自动高亮处理错误:', e);
-          }
-        }
-      }
-    });
-  } catch (e) {
-    console.error('处理内容时出错:', e);
-    // 在页面上显示错误信息，便于调试
-    const errorDiv = document.createElement('div');
-    errorDiv.style.color = 'red';
-    errorDiv.textContent = '处理内容时出错: ' + e.message;
-    document.body.appendChild(errorDiv);
-  }
-});
-</script></body></html>
-@@@@@
-<!DOCTYPE html><html><head>
-<meta charset="UTF-8">
-    <!-- 先加载所有依赖库 -->
-    <!-- Marked -->
-    <script src="https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/marked/4.0.2/marked.min.js"></script>
+    // 安全初始化函数
+      const initApp = () => {
+      try {
+        document.getElementById('loading').style.display = 'block';
 
-    <!-- KaTeX -->
-    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.css">
-    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.js"></script>
-    <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+        // ===== 主题检测 =====
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.getElementById('hljs-light').disabled = isDark;
+        document.getElementById('hljs-dark').disabled = !isDark;
 
-    <!-- Highlight.js - 使用完整版而不是单独加载语言 -->
-    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github.min.css" id="light-theme">
-    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github-dark.min.css" id="dark-theme" disabled>
-    <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/highlight.min.js"></script>
-    <script>
-        // 格式化消息内容
-function formatMessage(content) {
-    if (!content) return '';
-    
-    try {
-        // 保存数学表达式
-        const mathExpressions = [];
-        let processedContent = content.replace(/(\$\$[\s\S]*?\$\$|\$[\s\S]*?\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g, (match, p1, offset) => {
-            mathExpressions.push(p1);
-            return `@@MATH_EXPR_${mathExpressions.length - 1}@@`;
-        });
+        // ===== Markdown处理 =====
+         const processContent = (element) => {
+          const preserved = { mermaid: [], latex: [], code: [] };
 
-        // 使用 marked 处理 Markdown
-        processedContent = marked.parse(processedContent, {
+          let content = element.innerHTML
+            // 保护mermaid（优先级最高）
+            .replace(/```mermaid\s*?\n([\s\S]*?)```/g, (_, code) => {
+              preserved.mermaid.push(code.trim());
+              return `Ⓜ️${preserved.mermaid.length-1}Ⓜ️`;
+            })
+            // 保护latex公式
+            .replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g, (match) => {
+              preserved.latex.push(match);
+              return `₸${preserved.latex.length-1}₸`;
+            })
+            // 保护代码块（增强符号处理）
+            .replace(/```(c|cpp|java|python|js|javascript|php|go|rust|ruby|swift|html|css|sql)\s*\n([\s\S]*?)```/gi, (_, lang, code) => {
+              // 使用更安全的临时标记
+              const protectedCode = code.trim()
+                // .replace(/</g, `ⓛⓣ◀ⓛⓣ`)  // 单字符占位符
+                // .replace(/>/g, `ⓖⓣ▶ⓖⓣ`)
+                .replace(/</g, `&lt;`)
+                .replace(/>/g, `&gt;`);
+              preserved.code.push({
+                lang: lang.toLowerCase(),
+                code: protectedCode
+              });
+              return `Ⓒ${preserved.code.length-1}Ⓒ`;
+            });
+
+          const parsed = marked.parse(content, {
+            highlight: (code, lang) => code,
             mangle: false,
-            headerIds: false,
-            sanitize: false,
-            breaks: true,
-            gfm: true
-        });
+            breaks: false,
+            sanitize: false  // 必须关闭安全过滤
+          });
 
-        // 恢复数学表达式
-        processedContent = processedContent.replace(/@@MATH_EXPR_(\d+)@@/g, (match, index) => {
-            return mathExpressions[parseInt(index)];
-        });
+          element.innerHTML = parsed
+            .replace(/Ⓜ️(\d+)Ⓜ️/g, (_, id) =>
+              `<div class="mermaid">${preserved.mermaid[id]}</div>`)
+            .replace(/₸(\d+)₸/g, (_, id) => preserved.latex[id])
+            .replace(/Ⓒ(\d+)Ⓒ/g, (_, id) => {
+              const item = preserved.code[id];
+              // 安全恢复符号
+              const decodedCode = item.code
+                // .replace(/ⓛⓣ◀ⓛⓣ/g, '<')  // 全局替换
+                // .replace(/ⓖⓣ▶ⓖⓣ/g, '>')  // 全局替换
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>');
+              // 创建纯文本节点
+              const pre = document.createElement('pre');
+              const codeEl = document.createElement('code');
+              codeEl.className = `language-${item.lang}`;
+              codeEl.textContent = decodedCode;  // 关键点
+              pre.appendChild(codeEl);
+              return pre.outerHTML;
+            });
+        };
 
-        return processedContent;
-    } catch (e) {
-        console.error('Error formatting message:', e);
-        return content;
-    }
-}
-    </script>
-    <style>
-        /* 检测系统暗色模式 */
-        @media (prefers-color-scheme: dark) {
-            #light-theme { display: none; }
-            #dark-theme { display: block; }
-            
-            body {
-                background-color: #0d1117;
-                color: #c9d1d9;
-            }
-            
-            .card-content {
-                background-color: #0d1117;
-                color: #c9d1d9;
-            }
-            
-            .markdown-body {
-                color: #c9d1d9;
-            }
-            
-            .markdown-body code {
-                background-color: #161b22;
-            }
-            
-            .markdown-body pre {
-                background-color: #161b22;
-            }
-            
-            .markdown-body blockquote {
-                color: #8b949e;
-                border-left-color: #30363d;
-            }
-            
-            hr#answer {
-                background: #30363d;
-            }
-        }
-    </style>
-</head><body>
-<div class="card-content">
-  <div class="question markdown-body" id="question">{{Question}}</div>
-  <hr id="answer">
-  <div class="answer markdown-body" id="answer-content">{{Answer}}</div>
-</div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  try {
-    // 检测暗色模式
-    const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (prefersDarkMode) {
-      document.getElementById('light-theme').disabled = true;
-      document.getElementById('dark-theme').disabled = false;
-      document.body.classList.add('dark-mode');
-    }
-    
-    // 获取问题和答案内容
-    const questionElement = document.getElementById('question');
-    const answerElement = document.getElementById('answer-content');
-    
-    const questionContent = questionElement.innerHTML;
-    const answerContent = formatMessage(answerElement.innerHTML);
-    
-    // 使用marked解析Markdown，并配置代码高亮
-    marked.setOptions({
-      highlight: function(code, lang) {
-        try {
-          if (lang && hljs.getLanguage(lang)) {
-            return hljs.highlight(code, { language: lang }).value;
-          } else {
-            // 尝试自动检测语言
-            return hljs.highlightAuto(code).value;
-          }
-        } catch (e) {
-          console.error('高亮处理错误:', e);
-          return code; // 返回原始代码
-        }
-      }
-    });
-    
-    // 解析Markdown
-    questionElement.innerHTML = marked.parse(questionContent);
-    answerElement.innerHTML = marked.parse(answerContent);
-    
-    // 渲染数学公式
-    renderMathInElement(document.body, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '$', right: '$', display: false},
-        {left: '\\[', right: '\\]', display: true},
-        {left: '\\(', right: '\\)', display: false}
-      ],
-      throwOnError: false
-    });
-    
-    // 手动处理未被marked处理的代码块
-    document.querySelectorAll('pre code').forEach((block) => {
-      // 检查是否已经高亮
-      if (!block.classList.contains('hljs')) {
-        // 尝试从class名称获取语言
-        const langMatch = block.className.match(/language-(\w+)/);
-        if (langMatch) {
-          try {
-            hljs.highlightElement(block);
-          } catch (e) {
-            console.error('高亮处理错误:', e);
-          }
+        // 处理问题和答案
+        [document.getElementById('question'), document.getElementById('answer')]
+          .forEach(processContent);
+
+        // ===== Mermaid初始化 =====
+        if (typeof mermaid !== 'undefined') {
+          mermaid.initialize({
+            theme: isDark ? 'dark' : 'default',
+            securityLevel: 'loose',
+            flowchart: { curve: 'basis' }
+          });
+          mermaid.init();
         } else {
-          // 尝试自动检测语言
-          try {
-            hljs.highlightAuto(block);
-            hljs.highlightElement(block);
-          } catch (e) {
-            console.error('自动高亮处理错误:', e);
+          console.error('Mermaid未加载');
+          document.querySelectorAll('.mermaid').forEach(el => {
+            el.innerHTML = '<div class="error">图表加载失败，请检查网络连接</div>';
+          });
+        }
+
+        // ===== 数学公式 =====
+        if (typeof renderMathInElement === 'function') {
+          renderMathInElement(document.body, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+          });
+        }
+
+        // ===== 代码高亮和行号 =====
+        if (typeof hljs !== 'undefined') {
+          hljs.highlightAll();
+          // 新版行号初始化
+          if (hljs.lineNumbersBlock) {
+            document.querySelectorAll('pre code').forEach(block => {
+              hljs.lineNumbersBlock(block, {
+                singleLine: false,
+                startFrom: 1
+              });
+            });
           }
         }
+
+      } catch(e) {
+        console.error('初始化错误:', e);
+        document.body.innerHTML += `
+          <div class="error">
+            <h3>⚠️ 渲染错误</h3>
+            <p>${e.message}</p>
+            <pre>${e.stack}</pre>
+          </div>
+        `;
+      } finally {
+        document.getElementById('loading').style.display = 'none';
       }
-    });
-  } catch (e) {
-    console.error('处理内容时出错:', e);
-    // 在页面上显示错误信息，便于调试
-    const errorDiv = document.createElement('div');
-    errorDiv.style.color = 'red';
-    errorDiv.textContent = '处理内容时出错: ' + e.message;
-    document.body.appendChild(errorDiv);
-  }
-});
-</script></body></html>
+    };
+
+    // 启动初始化
+    document.addEventListener('DOMContentLoaded', initApp);
+
+    // 错误处理
+    window.addEventListener('error', (e) => {
+      if (e.target.tagName === 'SCRIPT') {
+        document.body.innerHTML += `
+          <div class="error">
+            <h3>⚠️ 资源加载失败</h3>
+            <p>${e.target.src}</p>
+            <button onclick="location.reload()">点击重试</button>
+          </div>
+        `;
+      }
+    }, true);
+</script>
+</body>
+</html>
 @@@@@
-.card { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif; 
-        font-size: 16px; line-height: 1.6; color: #24292e; padding: 16px; }
-
-.markdown-body { color: #24292e; line-height: 1.6; }
-.markdown-body p { margin: 8px 0; }
-.markdown-body code { padding: 0.2em 0.4em; background-color: #f6f8fa; 
-                     border-radius: 3px; font-size: 85%; }
-.markdown-body pre { background-color: #f6f8fa; border-radius: 6px; padding: 16px; 
-                    overflow: auto; font-size: 85%; line-height: 1.45; }
-.markdown-body pre code { padding: 0; background-color: transparent; }
-.markdown-body h1, .markdown-body h2, .markdown-body h3, 
-.markdown-body h4, .markdown-body h5, .markdown-body h6 
-{ margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; }
-.markdown-body h1 { font-size: 2em; }
-.markdown-body h2 { font-size: 1.5em; }
-.markdown-body h3 { font-size: 1.25em; }
-.markdown-body ul, .markdown-body ol { padding-left: 2em; }
-.markdown-body blockquote { padding: 0 1em; color: #6a737d; 
-                           border-left: 0.25em solid #dfe2e5; }
-
-.latex-inline { font-size: 100%; }
-.latex-display { font-size: 120%; text-align: center; margin: 12px 0; }
-
-hr#answer { border: 0; height: 1px; background: #dfe2e5; margin: 16px 0; }
-
-.question { margin-bottom: 16px; }
-.answer { margin-top: 16px; }
-
-/* 详细的代码高亮样式 */
-.hljs { display: block; overflow-x: auto; padding: 1em; background: #f6f8fa; color: #24292e; }
-.hljs-keyword, .hljs-selector-tag, .hljs-subst { color: #d73a49; font-weight: bold; }
-.hljs-string, .hljs-doctag, .hljs-regexp { color: #032f62; }
-.hljs-title, .hljs-section, .hljs-selector-id { color: #6f42c1; font-weight: bold; }
-.hljs-comment { color: #6a737d; }
-.hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: #005cc5; }
-.hljs-tag, .hljs-name, .hljs-attr { color: #22863a; }
-.hljs-type, .hljs-class .hljs-title { color: #6f42c1; font-weight: bold; }
-.hljs-symbol, .hljs-bullet, .hljs-built_in, .hljs-builtin-name, .hljs-addition { color: #005cc5; }
-.hljs-meta { color: #6a737d; }
-.hljs-deletion { color: #b31d28; background-color: #ffeef0; }
-.hljs-emphasis { font-style: italic; }
-.hljs-strong { font-weight: bold; }
-
-/* 暗色模式样式 */
-.dark-mode, .nightMode {
-    background-color: #0d1117;
-    color: #c9d1d9;
+:root {
+--base-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+--code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+--color-text: #24292e;
+--color-bg: #ffffff;
+--color-code-bg: #f6f8fa;
+--color-border: #e1e4e8;
 }
 
-.dark-mode .card, .nightMode .card {
-    color: #c9d1d9;
-    background-color: #0d1117;
+@media (prefers-color-scheme: dark) {
+:root {
+--color-text: #c9d1d9;
+--color-bg: #0d1117;
+--color-code-bg: #161b22;
+--color-border: #30363d;
+}
 }
 
-.dark-mode .markdown-body, .nightMode .markdown-body {
-    color: #c9d1d9;
+/* 基础布局 */
+.card front back {
+max-width: 800px;
+margin: 0 auto;
+padding: 20px;
+font-family: var(--base-font);
+line-height: 1.6;
+color: var(--color-text);
+background: var(--color-bg);
 }
 
-.dark-mode .markdown-body code, .nightMode .markdown-body code {
-    background-color: #161b22;
+/* Markdown内容 */
+.markdown-body {
+h1, h2, h3 {
+margin: 1.5em 0 1em;
+border-bottom: 1px solid var(--color-border);
+padding-bottom: 0.3em;
 }
 
-.dark-mode .markdown-body pre, .nightMode .markdown-body pre {
-    background-color: #161b22;
+pre {
+background: var(--color-code-bg);
+padding: 1em;
+border-radius: 6px;
+overflow-x: auto;
+margin: 1.5em 0;
+
+code {
+background: transparent;
+padding: 0;
+}
 }
 
-.dark-mode .markdown-body blockquote, .nightMode .markdown-body blockquote {
-    color: #8b949e;
-    border-left-color: #30363d;
+code:not(pre code) {
+padding: 0.2em 0.4em;
+background: var(--color-code-bg);
+border-radius: 3px;
+}
 }
 
-.dark-mode hr#answer, .nightMode hr#answer {
-    background: #30363d;
+/* Mermaid容器 */
+.mermaid {
+background: var(--color-bg);
+padding: 1.5em;
+margin: 1.5em 0;
+border-radius: 8px;
+min-height: 200px;
 }
 
-/* 暗色模式下的代码高亮 */
-.dark-mode .hljs, .nightMode .hljs {
-    background: #161b22;
-    color: #c9d1d9;
+/* 加载动画 */
+#loading {
+text-align: center;
+padding: 2em;
+
+.loader {
+width: 40px;
+height: 40px;
+border: 4px solid #f3f3f3;
+border-top: 4px solid #3498db;
+border-radius: 50%;
+animation: spin 1s linear infinite;
+margin: 0 auto;
 }
 
-.dark-mode .hljs-keyword, .dark-mode .hljs-selector-tag, .dark-mode .hljs-subst,
-.nightMode .hljs-keyword, .nightMode .hljs-selector-tag, .nightMode .hljs-subst {
-    color: #ff7b72;
-    font-weight: bold;
+p {
+margin-top: 1em;
+color: var(--color-text);
+}
 }
 
-.dark-mode .hljs-string, .dark-mode .hljs-doctag, .dark-mode .hljs-regexp,
-.nightMode .hljs-string, .nightMode .hljs-doctag, .nightMode .hljs-regexp {
-    color: #a5d6ff;
+@keyframes spin {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
 }
 
-.dark-mode .hljs-title, .dark-mode .hljs-section, .dark-mode .hljs-selector-id,
-.nightMode .hljs-title, .nightMode .hljs-section, .nightMode .hljs-selector-id {
-    color: #d2a8ff;
-    font-weight: bold;
+/* 错误提示 */
+.error {
+padding: 1.5rem;
+margin: 2rem 0;
+border: 2px solid #ff4d4f;
+border-radius: 8px;
+background: rgba(255,77,79,0.1);
+
+pre {
+white-space: pre-wrap;
+background: rgba(0,0,0,0.05);
+padding: 1em;
+border-radius: 4px;
+}
 }
 
-.dark-mode .hljs-comment, .nightMode .hljs-comment {
-    color: #8b949e;
+/* 移动端优化 */
+@media (max-width: 768px) {
+.card {
+padding: 8px;
+font-size: 14px;
 }
 
-.dark-mode .hljs-number, .dark-mode .hljs-literal, .dark-mode .hljs-variable,
-.dark-mode .hljs-template-variable, .dark-mode .hljs-tag .hljs-attr,
-.nightMode .hljs-number, .nightMode .hljs-literal, .nightMode .hljs-variable,
-.nightMode .hljs-template-variable, .nightMode .hljs-tag .hljs-attr {
-    color: #79c0ff;
+.mermaid {
+padding: 1em;
+min-height: 150px;
 }
 
-.dark-mode .hljs-tag, .dark-mode .hljs-name, .dark-mode .hljs-attr,
-.nightMode .hljs-tag, .nightMode .hljs-name, .nightMode .hljs-attr {
-    color: #7ee787;
+#loading {
+padding: 1em;
 }
 
-.dark-mode .hljs-type, .dark-mode .hljs-class .hljs-title,
-.nightMode .hljs-type, .nightMode .hljs-class .hljs-title {
-    color: #d2a8ff;
-    font-weight: bold;
+.hljs-ln-numbers {
+padding-right: 8px;
+font-size: 12px;
 }
-
-.dark-mode .hljs-symbol, .dark-mode .hljs-bullet, .dark-mode .hljs-built_in,
-.dark-mode .hljs-builtin-name, .dark-mode .hljs-addition,
-.nightMode .hljs-symbol, .nightMode .hljs-bullet, .nightMode .hljs-built_in,
-.nightMode .hljs-builtin-name, .nightMode .hljs-addition {
-    color: #79c0ff;
-}
-
-.dark-mode .hljs-meta, .nightMode .hljs-meta {
-    color: #8b949e;
-}
-
-.dark-mode .hljs-deletion, .nightMode .hljs-deletion {
-    color: #ffa198;
-    background-color: #490202;
 }

@@ -1084,7 +1084,22 @@ function createResendButton(messageId) {
             document.getElementById('message-input').disabled = true;
             
             // Call the Java method to send the message
-            ChatAndroid.sendMessage(content);
+//            ChatAndroid.sendMessage(content);
+
+            // Call the Java method to send the message
+            if (chatAndroidReady) {
+                var container = document.getElementById('prompt-message');
+                if (container) {
+                    var prompt = container.querySelector('.prompt-content').textContent + '\n';
+                    container.style.opacity = 0;
+                    setTimeout(() => {
+                        container.remove();
+                    }, 300);
+                    ChatAndroid.sendMessage(content, prompt);
+                } else {
+                    ChatAndroid.sendMessage(content);
+                }
+            }
         }
     };
     return resendButton;

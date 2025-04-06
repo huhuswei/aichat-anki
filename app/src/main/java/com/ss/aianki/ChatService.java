@@ -84,6 +84,7 @@ public class ChatService {
         // 初始化 AnkiDroid API
         this.ankiApi = new AddContentApi(context);
         this.dbHelper = new DatabaseHelper(context);
+        selectedDeckId = Settings.getInstance(MyApplication.getContext()).get(Settings.CURRENT_DECK_ID, -1L);
         
         // 加载所有会话
         sessionHistory.addAll(dbHelper.loadAllSessions());

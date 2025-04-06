@@ -6,16 +6,6 @@ package com.ss.aianki;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Point;
-import android.os.Environment;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import java.io.File;
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 
 /**
  * 单例，getInstance()得到实例
@@ -26,7 +16,7 @@ public class Settings {
 
     private final static String PREFER_NAME = "settings";    //应用设置名称
     public final static String DARK_MODE_INDEX = "dark_modea_index";
-
+    public final static String CURRENT_DECK_ID = "current_deck_id";
 
     private SharedPreferences sp;
     private SharedPreferences.Editor editor;
@@ -72,6 +62,12 @@ public class Settings {
         return true;
     }
 
+    public boolean put(String TAG, long value) {
+        editor.putLong(TAG, value);
+        editor.commit();
+        return true;
+    }
+
     public String get(String TAG, String defaultValue) {
         return sp.getString(TAG, defaultValue);
     }
@@ -82,6 +78,10 @@ public class Settings {
 
     public int get(String TAG, int defaultValue) {
         return sp.getInt(TAG, defaultValue);
+    }
+
+    public long get(String TAG, long defaultValue) {
+        return sp.getLong(TAG, defaultValue);
     }
 
 }

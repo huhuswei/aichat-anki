@@ -8,7 +8,6 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -51,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private Spinner deckSpinner;
     private List<Map<String, Object>> deckList = new ArrayList<>();
     private static final String PREF_SELECTED_DECK_ID = "selected_deck_id";
-    
+    private final Settings settings = Settings.getInstance(MyApplication.getContext());
     // 添加一个标志来跟踪初始化状态
     private boolean isInitializing = false;
     private DeckPreferences deckPreferences;
@@ -76,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
         
         // Initialize deck preferences
         deckPreferences = new DeckPreferences(this);
-        
+
         // 初始化所有 UI 组件
         initializeUI();
         
@@ -112,7 +111,8 @@ public class MainActivity extends AppCompatActivity {
         indicatorBar = findViewById(R.id.indicatorBar);
         currentSelectionText = findViewById(R.id.currentSelectionText);
         // Set up click listener
-        indicatorBar.setOnClickListener(v -> toggleSpinnerContainer());
+        indicatorBar.setOnClickListener(v -> showDeckSelectionDialog());
+        indicatorBar.setOnLongClickListener(v-> {toggleSpinnerContainer();return true;});
 
         // Update selection text when spinners change
         setupSpinnerListeners();
@@ -125,7 +125,6 @@ public class MainActivity extends AppCompatActivity {
 //        updateServerSpinner();
         initializeUI();
         loadPrompts(); // Reload prompts when returning to activity
-        loadAnkiDecks();
     }
 
     @Override
@@ -239,7 +238,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
-                updateSelectionText();
             }
         });
 
@@ -393,6 +391,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             }
+            updateSelectionText();
         }
     }
 
@@ -579,7 +578,7 @@ public class MainActivity extends AppCompatActivity {
                 if (position >= 0 && position < filteredDeckList.size()) {
                     long deckId = ((Number) filteredDeckList.get(position).get("id")).longValue();
                     chatService.setSelectedDeckId(deckId);
-                    
+                    settings.put(Settings.CURRENT_DECK_ID, deckId);
                     // Save selection
                     SharedPreferences prefs = getPreferences(MODE_PRIVATE);
                     prefs.edit().putLong(PREF_SELECTED_DECK_ID, deckId).apply();
@@ -587,19 +586,20 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("MainActivity", "Selected deck: " + filteredDeckList.get(position).get("name") + 
                         " (ID: " + deckId + ")");
                 }
+                updateSelectionText();
+
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
-                // Do nothing
             }
         });
 
-        updateSelectionText();
         // Set initial Gone
+        updateSelectionText();
         spinnerContainer.setVisibility(View.GONE);
     }
-    
+
     private void showDeckFilterDialog() {
         // First load the latest decks
         if (chatService == null) {
@@ -720,6 +720,57 @@ public class MainActivity extends AppCompatActivity {
         isSpinnerContainerVisible = isSpinnerContainerVisible+1 % 2;
     }
 
+    private void showDeckSelectionDialog() {
+        // 提取牌组名称列表
+        List<String> deckNames = new ArrayList<>();
+        for (Map<String, Object> deck : filteredDeckList) {
+            deckNames.add((String) deck.get("name"));
+        }
+
+        // 获取当前选中的位置
+        int currentSelection = deckSpinner.getSelectedItemPosition();
+
+        // 创建 AlertDialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("选择牌组");
+
+        // 设置单选列表
+        builder.setSingleChoiceItems(
+                deckNames.toArray(new String[0]),
+                currentSelection,
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // 选中某个牌组时的逻辑
+                        if (which >= 0 && which < filteredDeckList.size()) {
+                            long deckId = ((Number) filteredDeckList.get(which).get("id")).longValue();
+                            chatService.setSelectedDeckId(deckId);
+                            settings.put(Settings.CURRENT_DECK_ID, deckId);
+
+                            // 保存选择
+                            SharedPreferences prefs = getPreferences(MODE_PRIVATE);
+                            prefs.edit().putLong(PREF_SELECTED_DECK_ID, deckId).apply();
+
+                            Log.d("MainActivity", "Selected deck (via dialog): " +
+                                    filteredDeckList.get(which).get("name") + " (ID: " + deckId + ")");
+
+                            // 更新 Spinner 显示
+                            deckSpinner.setSelection(which);
+                            updateSelectionText();
+                        }
+                        dialog.dismiss(); // 选择后关闭对话框
+                    }
+                }
+        );
+
+        // 可选：添加取消按钮
+        builder.setNegativeButton("取消", null);
+
+        // 显示对话框
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
     private void updateSelectionText() {
         String model = String.valueOf(modelSpinner.getSelectedItem());
         String deck = String.valueOf(deckSpinner.getSelectedItem());
@@ -754,7 +805,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void openSettingsPage() {
         Intent intent = new Intent();
-        intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setAction(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         Uri uri = Uri.fromParts("package", getPackageName(), null);
         intent.setData(uri);
         startActivity(intent);
