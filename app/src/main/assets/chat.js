@@ -314,14 +314,13 @@ function addMessageToUI(message) {
 
             try {
                 if (typeof mermaid !== 'undefined') {
-                    mermaid.run();  // 或使用
-                    mermaid.contentLoaded();
+                    mermaid.run();  // 只使用一种方法，移除contentLoaded调用
                     console.log('Mermaid running');
                 } else {
-                    console.log('Mermaid down');
+                    console.log('Mermaid not available');
                 }
             } catch (e) {
-                console.log('Error initializing mermaid:', e);
+                console.log('Error running mermaid:', e);
             }
 
             // 处理代码高亮
@@ -378,14 +377,13 @@ function addMessageToUI(message) {
 
         try {
             if (typeof mermaid !== 'undefined') {
-                mermaid.run();  // 或使用
-                mermaid.contentLoaded();
+                mermaid.run();  // 只使用一种方法，移除contentLoaded调用
                 console.log('Mermaid running');
             } else {
-                console.log('Mermaid down');
+                console.log('Mermaid not available');
             }
         } catch (e) {
-            console.log('Error initializing mermaid:', e);
+            console.log('Error running mermaid:', e);
         }
     
     console.log('Created new message element:', messageId);
@@ -853,14 +851,13 @@ function updateMessageContent(messageId, content) {
 
             try {
                 if (typeof mermaid !== 'undefined') {
-                    mermaid.run();  // 或使用
-                    mermaid.contentLoaded();
+                    mermaid.run();  // 只使用一种方法，移除contentLoaded调用
                     console.log('Mermaid running');
                 } else {
-                    console.log('Mermaid down');
+                    console.log('Mermaid not available');
                 }
             } catch (e) {
-                console.log('Error initializing mermaid:', e);
+                console.log('Error running mermaid:', e);
             }
 
             // 处理代码高亮
@@ -927,14 +924,13 @@ function onResponseComplete() {
 
             try {
                 if (typeof mermaid !== 'undefined') {
-                    mermaid.run();  // 或使用
-                    mermaid.contentLoaded();
+                    mermaid.run();  // 只使用一种方法，移除contentLoaded调用
                     console.log('Mermaid running');
                 } else {
-                    console.log('Mermaid down');
+                    console.log('Mermaid not available');
                 }
             } catch (e) {
-                console.log('Error initializing mermaid:', e);
+                console.log('Error running mermaid:', e);
             }
             
             // Update the raw content attribute

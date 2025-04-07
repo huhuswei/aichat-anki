@@ -1,3 +1,21 @@
+:root {
+    --base-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --color-text: #24292e;
+    --color-bg: #ffffff;
+    --color-code-bg: #f6f8fa;
+    --color-border: #e1e4e8;
+}
+    
+@media (prefers-color-scheme: dark) {
+    :root {
+    --color-text: #c9d1d9;
+    --color-bg: #0d1117;
+    --color-code-bg: #161b22;
+    --color-border: #30363d;
+    }
+}
+
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -179,30 +197,286 @@ body {
 
 .markdown-body p {
     margin: 0;
+    color: var(--color-text);
 }
 
 .markdown-body p + p {
     margin-top: 8px;
+    color: var(--color-text);
 }
 
-.markdown-body pre {
-    margin: 8px 0;
-    padding: 13px;
-    background-color: #f6f8fa;
-    border-radius: 8px;
+pre {
+    background: var(--color-code-bg);
+    padding: 1em;
+    border-radius: 6px;
     overflow-x: auto;
+    margin: 1.5em 0;
+}
+code {
+    background: transparent;
+    padding: 0;
 }
 
-.markdown-body code {
-    font-size: 0.9em;
+    
+code:not(pre code) {
     padding: 0.2em 0.4em;
-    background-color: rgba(27,31,35,0.05);
+    background: var(--color-code-bg);
     border-radius: 3px;
 }
 
-.markdown-body pre code {
-    padding: 0;
-    background-color: transparent;
+/* Mermaid容器 */
+.mermaid {
+    background: var(--color-bg);
+    padding: 1.5em;
+    margin: 1.5em 0;
+    border-radius: 8px;
+    min-height: 200px;
+    cursor: pointer; /* 添加指针样式表示可点击 */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    will-change: transform; /* 硬件加速提示 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* 确保mermaid中的SVG保持正确比例 */
+.mermaid svg {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100%;
+    display: block;
+    margin: 0 auto;
+}
+
+.mermaid:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.mermaid::after {
+    content: '点击查看大图';
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none; /* 防止拦截点击事件 */
+}
+
+.mermaid:hover::after {
+    opacity: 1;
+}
+
+/* Mermaid模态框 */
+.mermaid-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    will-change: opacity; /* 硬件加速 */
+}
+
+.mermaid-modal-content {
+    position: relative;
+    width: 90%;
+    height: 90%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.mermaid-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: white;
+    font-size: 30px;
+    cursor: pointer;
+    z-index: 1001;
+    background: rgba(0, 0, 0, 0.5);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translateZ(0); /* 硬件加速 */
+}
+
+/* 提示文本 */
+.mermaid-hint {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    z-index: 1001;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.mermaid-hint.show {
+    opacity: 1;
+}
+
+/* 缩放容器 */
+.mermaid-zoom-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* 改为hidden，由transform处理内容移动 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: none; /* 禁用浏览器默认触摸行为 */
+    position: relative;
+}
+
+.mermaid-zoom-content {
+    max-width: initial; /* 移除最大宽度限制 */
+    max-height: initial; /* 移除最大高度限制 */
+    width: auto;
+    height: auto;
+    transform-origin: center;
+    transition: transform 0.05s linear; /* 减少动画时间提高响应速度 */
+    will-change: transform; /* 硬件加速 */
+    backface-visibility: hidden; /* 防止闪烁 */
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0) scale(1) translate(0px, 0px);
+    -webkit-transform: translateZ(0) scale(1) translate(0px, 0px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mermaid-zoom-content svg {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* 缩放控制按钮 */
+.zoom-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 20px;
+    z-index: 1001;
+    transition: opacity 0.3s ease;
+    will-change: transform, opacity; /* 硬件加速 */
+}
+
+.zoom-controls.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.zoom-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    cursor: pointer;
+    user-select: none;
+    border: none;
+    transform: translateZ(0); /* 硬件加速 */
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.zoom-button:active {
+    background-color: #f0f0f0;
+    transform: translateZ(0) scale(0.95);
+}
+
+.zoom-info {
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    padding: 0 10px;
+    min-width: 50px;
+}
+
+/* 适配深色模式 */
+@media (prefers-color-scheme: dark) {
+    .mermaid::after {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .zoom-button {
+        background: #333;
+        color: white;
+    }
+    
+    .zoom-button:active {
+        background-color: #444;
+    }
+}
+
+/* 添加动画效果 */
+.mermaid-modal.show {
+    display: flex;
+    opacity: 1;
+}
+
+/* 适配横屏模式 */
+@media screen and (orientation: landscape) {
+    .mermaid-close {
+        top: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+    }
+    
+    .mermaid-hint {
+        top: 10px;
+        font-size: 12px;
+    }
+    
+    .zoom-controls {
+        bottom: 10px;
+        padding: 8px;
+    }
+    
+    .zoom-button {
+        width: 36px;
+        height: 36px;
+    }
 }
 
 /* Input container */

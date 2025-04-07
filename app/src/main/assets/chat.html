@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>AI 聊天</title>
 
     <!-- 先加载所有依赖库 -->
@@ -15,7 +15,8 @@
     <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 
     <!-- Highlight.js -->
-    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.8.0/styles/github.min.css">
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/monokai.css" id="hljs-light">
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/monokai-sublime.css" id="hljs-dark" disabled>
     <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/highlight.min.js"></script>
     <!-- 添加常用语言支持 -->
     <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/java.min.js"></script>
@@ -32,6 +33,12 @@
         // 初始化检查
         window.addEventListener('load', function() {
             console.log('Window loaded');
+
+            // ===== 主题检测 =====
+            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.getElementById('hljs-light').disabled = isDark;
+            document.getElementById('hljs-dark').disabled = !isDark;
+
             if (typeof katex === 'undefined') {
                 console.error('KaTeX not loaded');
             } else {
@@ -46,12 +53,45 @@
                 console.error('Mermaid not loaded');
             } else {
               mermaid.initialize({
+                theme: (isDark ? 'dark' : 'default'),
                 startOnLoad: true,
                 securityLevel: 'loose',
-                flowchart: { curve: 'basis' }
+                flowchart: { curve: 'basis' },
+                fontSize: 16,
+                fontFamily: "'Segoe UI', 'Microsoft YaHei', sans-serif",
+                htmlLabels: true,
+                deterministicIds: true,
+                useMaxWidth: true,
+                fit: true,
+                gantt: {
+                  titleTopMargin: 25,
+                  barHeight: 20,
+                  barGap: 4,
+                  topPadding: 50,
+                  leftPadding: 75,
+                  rightPadding: 20,
+                  bottomPadding: 50,
+                },
+                sequence: {
+                  diagramMarginX: 50,
+                  diagramMarginY: 10,
+                  actorMargin: 50,
+                  boxMargin: 10,
+                  boxTextMargin: 5,
+                  noteMargin: 10,
+                  messageMargin: 35,
+                  mirrorActors: true
+                }
               });
-              mermaid.init();
-                console.log('Mermaid loaded');
+              setTimeout(function() {
+                try {
+                  mermaid.init();
+                  console.log('Mermaid initialized');
+                } catch (error) {
+                  console.error('Mermaid initialization error:', error);
+                }
+              }, 100);
+              console.log('Mermaid loaded');
             }
         });
     </script>
@@ -92,5 +132,6 @@
     </div>
 
     <script src="chat.js"></script>
+    <script src="mermaid-mobile.js"></script>
 </body>
 </html> 

@@ -92,15 +92,13 @@ public class MainActivity extends AppCompatActivity {
         promptChipGroup = findViewById(R.id.promptChipGroup);
         
         // Load prompts
-        loadPrompts();
+//        loadPrompts();
         
         // Initialize deck spinner
         deckSpinner = findViewById(R.id.deckSpinner);
         deckSpinner.setOnLongClickListener(v-> {showDeckFilterDialog();return true;});
 
         checkAnkiPermission();
-        // Load Anki decks
-        loadAnkiDecks();
 
         // Handle initial intent
         handleIntent(getIntent());
@@ -123,7 +121,9 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         // 只更新服务器选择器，不重新初始化 ChatService
 //        updateServerSpinner();
-        initializeUI();
+//        initializeUI();
+        // Load Anki decks
+        loadAnkiDecks();
         loadPrompts(); // Reload prompts when returning to activity
     }
 
