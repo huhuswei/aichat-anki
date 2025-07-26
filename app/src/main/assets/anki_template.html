@@ -3,12 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 前端模板 -->
+    <!-- 样式和依赖 -->
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.css">
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/monokai.css" id="hljs-light">
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/monokai-sublime.css" id="hljs-dark" disabled>
+    <style>
+        .hljs-ln-numbers {
+          text-align: right;
+          padding-right: 15px;
+          color: #999;
+          border-right: 1px solid #ddd;
+          user-select: none;
+        }
+    </style>
 </head>
 <body>
 <div class="card">
     <div class="markdown-body" id="question">{{Question}}</div>
+    <hr class="answer-divider">
+    <div class="markdown-body" id="answer"></div>
+
+    <!-- 加载状态 -->
+    <div id="loading" style="display:none;">
+        <div class="loader"></div>
+        <p>内容渲染中...</p>
+    </div>
 </div>
+
+<!-- 资源加载顺序优化 -->
+<!-- Highlight.js - 使用完整版而不是单独加载语言 -->
+<script src="https://g.alicdn.com/code/lib/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.9.0/highlightjs-line-numbers.min.js"></script>
+<script src="https://g.alicdn.com/code/lib/marked/4.0.2/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.7.0/dist/mermaid.min.js"></script>
+<script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+
+<!--<script src="-->
+<!--https://g.alicdn.com/code/lib/mermaid/10.2.0/mermaid.min.js-->
+<!--"></script>-->
+
+<script>
+    // 安全初始化函数
+      const initApp = () => {
+      try {
+        document.getElementById('loading').style.display = 'block';
+
+        // ===== 主题检测 =====
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.getElementById('hljs-light').disabled = isDark;
+        document.getElementById('hljs-dark').disabled = !isDark;
+
+        // ===== Markdown处理 =====
+         const processContent = (element) => {
+          const preserved = { mermaid: [], latex: [], code: [] };
+
+          let content = element.innerHTML
+            // 保护mermaid（优先级最高）
+            .replace(/```mermaid\s*?\n([\s\S]*?)```/g, (_, code) => {
+              preserved.mermaid.push(code.trim());
+              return `Ⓜ️${preserved.mermaid.length-1}Ⓜ️`;
+            })
+            // 保护latex公式
+            .replace(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g, (match) => {
+              preserved.latex.push(match);
+              return `₸${preserved.latex.length-1}₸`;
+            })
+            // 保护代码块（增强符号处理）
+            .replace(/```(c|cpp|java|python|js|javascript|php|go|rust|ruby|swift|html|css|sql)\s*\n([\s\S]*?)```/gi, (_, lang, code) => {
+              // 使用更安全的临时标记
+              const protectedCode = code.trim()
+                // .replace(/</g, `ⓛⓣ◀ⓛⓣ`)  // 单字符占位符
+                // .replace(/>/g, `ⓖⓣ▶ⓖⓣ`)
+                .replace(/</g, `&lt;`)
+                .replace(/>/g, `&gt;`);
+              preserved.code.push({
+                lang: lang.toLowerCase(),
+                code: protectedCode
+              });
+              return `Ⓒ${preserved.code.length-1}Ⓒ`;
+            });
+
+          const parsed = marked.parse(content, {
+            highlight: (code, lang) => code,
+            mangle: false,
+            breaks: false,
+            sanitize: false  // 必须关闭安全过滤
+          });
+
+          element.innerHTML = parsed
+            .replace(/Ⓜ️(\d+)Ⓜ️/g, (_, id) =>
+              `<div class="mermaid">${preserved.mermaid[id]}</div>`)
+            .replace(/₸(\d+)₸/g, (_, id) => preserved.latex[id])
+            .replace(/Ⓒ(\d+)Ⓒ/g, (_, id) => {
+              const item = preserved.code[id];
+              // 安全恢复符号
+              const decodedCode = item.code
+                // .replace(/ⓛⓣ◀ⓛⓣ/g, '<')  // 全局替换
+                // .replace(/ⓖⓣ▶ⓖⓣ/g, '>')  // 全局替换
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>');
+              // 创建纯文本节点
+              const pre = document.createElement('pre');
+              const codeEl = document.createElement('code');
+              codeEl.className = `language-${item.lang}`;
+              codeEl.textContent = decodedCode;  // 关键点
+              pre.appendChild(codeEl);
+              return pre.outerHTML;
+            });
+        };
+
+        // 处理问题和答案
+        [document.getElementById('question'), document.getElementById('answer')]
+          .forEach(processContent);
+
+        // ===== Mermaid初始化 =====
+        if (typeof mermaid !== 'undefined') {
+          mermaid.initialize({
+            theme: isDark ? 'dark' : 'default',
+            securityLevel: 'loose',
+            flowchart: { curve: 'basis' }
+          });
+          mermaid.init();
+        } else {
+          console.error('Mermaid未加载');
+          document.querySelectorAll('.mermaid').forEach(el => {
+            el.innerHTML = '<div class="error">图表加载失败，请检查网络连接</div>';
+          });
+        }
+
+        // ===== 数学公式 =====
+        if (typeof renderMathInElement === 'function') {
+          renderMathInElement(document.body, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false,
+                output: 'html',
+                strict: false
+          });
+        }
+
+        // ===== 代码高亮和行号 =====
+        if (typeof hljs !== 'undefined') {
+          hljs.highlightAll();
+          // 新版行号初始化
+          if (hljs.lineNumbersBlock) {
+            document.querySelectorAll('pre code').forEach(block => {
+              hljs.lineNumbersBlock(block, {
+                singleLine: false,
+                startFrom: 1
+              });
+            });
+          }
+        }
+
+      } catch(e) {
+        console.error('初始化错误:', e);
+        document.body.innerHTML += `
+          <div class="error">
+            <h3>⚠️ 渲染错误</h3>
+            <p>${e.message}</p>
+            <pre>${e.stack}</pre>
+          </div>
+        `;
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    };
+
+    // 启动初始化
+    document.addEventListener('DOMContentLoaded', initApp);
+
+    // 错误处理
+    window.addEventListener('error', (e) => {
+      if (e.target.tagName === 'SCRIPT') {
+        document.body.innerHTML += `
+          <div class="error">
+            <h3>⚠️ 资源加载失败</h3>
+            <p>${e.target.src}</p>
+            <button onclick="location.reload()">点击重试</button>
+          </div>
+        `;
+      }
+    }, true);
+</script>
+
 </body>
 </html>
 @@@@@
@@ -33,7 +214,7 @@
 </head>
 <body>
 <div class="card">
-    {{FrontSide}}
+    <div class="markdown-body" id="question">{{Question}}</div>
     <hr class="answer-divider">
     <div class="markdown-body" id="answer">{{Answer}}</div>
 
@@ -49,7 +230,7 @@
 <script src="https://g.alicdn.com/code/lib/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.9.0/highlightjs-line-numbers.min.js"></script>
 <script src="https://g.alicdn.com/code/lib/marked/4.0.2/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10.3.1/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.7.0/dist/mermaid.min.js"></script>
 <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 

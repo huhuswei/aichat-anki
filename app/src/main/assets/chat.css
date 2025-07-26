@@ -446,6 +446,34 @@ code:not(pre code) {
     .zoom-button:active {
         background-color: #444;
     }
+    
+    /* 修复深色模式下sequenceDiagram中participant文字不可见的问题 */
+    .mermaid .actor {
+        fill: #2b2f38 !important;
+    }
+    
+    .mermaid .actor text, .mermaid text.actor {
+        fill: #e0e0e0 !important;
+        stroke: none !important;
+    }
+    
+    /* 修复其他可能的对比度问题 */
+    .mermaid .messageText {
+        fill: #e0e0e0 !important;
+        stroke: none !important;
+    }
+    
+    .mermaid .labelText, .mermaid .loopText, .mermaid .loopText > tspan {
+        fill: #e0e0e0 !important;
+    }
+    
+    .mermaid .note {
+        fill: #4b5062 !important;
+    }
+    
+    .mermaid .noteText {
+        fill: #e0e0e0 !important;
+    }
 }
 
 /* 添加动画效果 */

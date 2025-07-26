@@ -452,7 +452,7 @@ function addMessageToUI(message) {
     if (message.role === 'user') {
         const resendButton = createResendButton(message.id);
         messageDiv.insertBefore(resendButton, messageBubble);
-        
+
         // Add click handler to toggle resend button visibility
         messageDiv.addEventListener('click', function() {
             // Only show resend button if not currently generating
