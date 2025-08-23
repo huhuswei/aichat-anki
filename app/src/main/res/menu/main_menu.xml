@@ -13,7 +13,7 @@
         app:showAsAction="never" />
     <item
         android:id="@+id/action_update_anki_template"
-        android:title="新增Anki模板"
+        android:title="更新Anki模板"
         app:showAsAction="never" />
     <item
         android:id="@+id/action_theme"

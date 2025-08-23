@@ -18,6 +18,7 @@ import okhttp3.OkHttpClient;
 
 public class MyApplication extends MultiDexApplication {
     private static Context context;
+    private static AnkiDroidHelper mAnkiDroid;
     private static Application application;
     private static OkHttpClient okHttpClient;
     private static MyApplication instance;
@@ -39,12 +40,12 @@ public class MyApplication extends MultiDexApplication {
         return application;
     }
 
-//    public static AnkiDroidHelper getAnkiDroid() {
-//        if (mAnkiDroid == null) {
-//            mAnkiDroid = new AnkiDroidHelper(getApplication());
-//        }
-//        return mAnkiDroid;
-//    }
+    public static AnkiDroidHelper getAnkiDroid() {
+        if (mAnkiDroid == null) {
+            mAnkiDroid = new AnkiDroidHelper(getApplication());
+        }
+        return mAnkiDroid;
+    }
 
 
     public static OkHttpClient getOkHttpClient(){

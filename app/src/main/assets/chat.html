@@ -55,18 +55,24 @@
               // 定义深色模式的主题
               const darkTheme = {
                 dark: {
-                  background: '#0d1117',
-                  primaryColor: '#3b82f6',
-                  primaryTextColor: '#c9d1d9',
-                  secondaryColor: '#4b5062',
-                  tertiaryColor: '#2b2f38',
-                  lineColor: '#6e7681'
+                    background: '#2d2d2d',
+                    primaryColor: '#1e1e1e',
+                    primaryBorderColor: '#444',
+                    primaryTextColor: '#e0e0e0',
+                    secondaryColor: '#333',
+                    tertiaryColor: '#555'
+                },
+                light: {
+                    background: '#f5f5f5',
+                    primaryColor: '#eeeeee',
+                    primaryBorderColor: '#cccccc',
+                    primaryTextColor: '#333333'
                 }
               };
-              
+
               mermaid.initialize({
-                theme: (isDark ? 'dark' : 'default'),
-                themeVariables: isDark ? darkTheme.dark : undefined,
+                theme: (isDark ? 'dark' : 'dark'),
+                //themeVariables: (isDark ? darkTheme.dark : darkTheme.light),
                 startOnLoad: true,
                 securityLevel: 'loose',
                 flowchart: { curve: 'basis' },

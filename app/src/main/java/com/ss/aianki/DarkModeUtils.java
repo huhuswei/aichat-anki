@@ -1,8 +1,11 @@
 package com.ss.aianki;
 
+import android.app.Activity;
 import android.app.Application;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;
 
 import androidx.appcompat.app.AlertDialog;
@@ -24,7 +27,7 @@ public class DarkModeUtils {
     public static final String KEY_CURRENT_MODEL = "night_mode_state_sp";
 
     private static int getNightModel(Context context) {
-        Settings settings = Settings.getInstance(context);
+        Settings settings = Settings.getInstance(MyApplication.getContext());
         return settings.get(KEY_CURRENT_MODEL, AppCompatDelegate.MODE_NIGHT_YES);
     }
 
@@ -126,6 +129,10 @@ public class DarkModeUtils {
                                 break;
                         }
                         settings.put(Settings.DARK_MODE_INDEX, which);
+                        Intent intent = new Intent(activityContext, MainActivity.class);
+                        ComponentName cn = intent.getComponent();
+                        Intent mainIntent = Intent.makeRestartActivityTask(cn);
+                        ((Activity) activityContext).startActivity(mainIntent);
                         dialog.dismiss();
                     }
                 });

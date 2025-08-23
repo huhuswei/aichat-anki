@@ -2,8 +2,12 @@ package com.ss.aianki;
 
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -17,6 +21,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.google.gson.Gson;
+import com.ichi2.anki.FlashCardsContract;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 
@@ -54,6 +59,7 @@ import retrofit2.Response;
 import okhttp3.ResponseBody;
 
 public class ChatService {
+    private static String AI_CHAT = "AI Chat";
     private final WebView webView;
     private OpenAiApi openAiApi;
     private final List<Message> messageHistory = new ArrayList<>();
@@ -64,6 +70,8 @@ public class ChatService {
     private String outputFormat = "Markdown";
     private final Context context;
     private AddContentApi ankiApi;
+    AnkiDroidHelper mAnkidroid;
+    private final ContentResolver mResolver;
     private Long lastSavedNoteId = null;  // 存储最近保存的笔记 ID
     private List<Session> sessionHistory = new ArrayList<>();
     private Session currentSession = null;
@@ -73,10 +81,12 @@ public class ChatService {
     private boolean isSingleTurnMode = false;
     private long selectedDeckId = -1; // Default to -1 (not selected)
     private AIServerConfig config = null;
-    public ChatService(WebView webView, String apiKey, String baseUrl) {
+    public ChatService(Context aContext, WebView webView, String apiKey, String baseUrl) {
         this.webView = webView;
-        this.context = webView.getContext();
+        this.context = aContext;
         this.config = new AIServerConfig();
+        mAnkidroid = MyApplication.getAnkiDroid();
+        mResolver = context.getContentResolver();
         config.setApiKey(apiKey);
         config.setBaseUrl(baseUrl);
         this.openAiApi = createOpenAiApi(config.getApiKey(), config.getBaseUrl());
@@ -84,7 +94,7 @@ public class ChatService {
         // 初始化 AnkiDroid API
         this.ankiApi = new AddContentApi(context);
         this.dbHelper = new DatabaseHelper(context);
-        selectedDeckId = Settings.getInstance(MyApplication.getContext()).get(Settings.CURRENT_DECK_ID, -1L);
+        selectedDeckId = Settings.getInstance(aContext).get(Settings.CURRENT_DECK_ID, -1L);
         
         // 加载所有会话
         sessionHistory.addAll(dbHelper.loadAllSessions());
@@ -98,6 +108,8 @@ public class ChatService {
         this.webView = webView;
         this.context = webView.getContext();
         this.config = config;
+        mAnkidroid = MyApplication.getAnkiDroid();
+        mResolver = context.getContentResolver();
         this.openAiApi = createOpenAiApi(this.config.getApiKey(), this.config.getBaseUrl());
 
         // 初始化 AnkiDroid API
@@ -514,7 +526,7 @@ public class ChatService {
                     deckId = selectedDeckId;
                 } else {
                     // Use default "AI Chat" deck
-                    deckId = getOrCreateDeck("AI Chat");
+                    deckId = getOrCreateDeck(AI_CHAT);
                     if (deckId == -1) {
                         return false;
                     }
@@ -568,7 +580,7 @@ public class ChatService {
                 
                 long modelId = -1;
                 for (Map.Entry<Long, String> model : models.entrySet()) {
-                    if ("AI Chat".equals(model.getValue())) {
+                    if (AI_CHAT.equals(model.getValue())) {
                         modelId = model.getKey();
                         break;
                     }
@@ -616,7 +628,7 @@ public class ChatService {
                         String[] answerFormats = {answerFormat};
                         
                         modelId = ankiApi.addNewCustomModel(
-                            "AI Chat",
+                            AI_CHAT,
                             fieldNames,
                             cardNames,
                             questionFormats,
@@ -983,7 +995,7 @@ public class ChatService {
                 deckId = selectedDeckId;
             } else {
                 // Use default "AI Chat" deck
-                deckId = getOrCreateDeck("AI Chat");
+                deckId = getOrCreateDeck(AI_CHAT);
                 if (deckId == -1) {
                     return false;
                 }
@@ -1005,7 +1017,7 @@ public class ChatService {
             // 查找 AI Chat 模型
             long oldModelId = -1;
             for (Map.Entry<Long, String> model : models.entrySet()) {
-                if ("AI Chat".equals(model.getValue())) {
+                if (AI_CHAT.equals(model.getValue())) {
                     oldModelId = model.getKey();
                     break;
                 }
@@ -1079,20 +1091,22 @@ public class ChatService {
 //
 //                    System.out.println("创建临时模型成功，ID: " + newModelId);
                     
-                    // 现在创建最终的模型
-                    long finalModelId = ankiApi.addNewCustomModel(
-                        "AI Chat",
-                        fieldNames,
-                        cardNames,
-                        questionFormats,
-                        answerFormats,
-                        css,
-                        deckId,
-                        null
-                    );
+//                    // 现在创建最终的模型
+//                    long finalModelId = ankiApi.addNewCustomModel(
+//                        AI_CHAT,
+//                        fieldNames,
+//                        cardNames,
+//                        questionFormats,
+//                        answerFormats,
+//                        css,
+//                        deckId,
+//                        null
+//                    );
+
+                    long finalModelId = updateModel(AI_CHAT, fieldNames, cardNames, questionFormats, answerFormats, css);
                     
-                    System.out.println("创建或更新模型成功，ID: " + finalModelId);
-                    
+//                    System.out.println("创建或更新模型成功，ID: " + finalModelId);
+
                     // 通知用户模板已更新
                     mainHandler.post(() -> {
                         Toast.makeText(context, "Anki模板已更新，新卡片将使用新模板", Toast.LENGTH_LONG).show();
@@ -1111,7 +1125,7 @@ public class ChatService {
                 // 如果没有找到旧模型，直接创建新模型
                 try {
                     long modelId = ankiApi.addNewCustomModel(
-                        "AI Chat",
+                        AI_CHAT,
                         fieldNames,
                         cardNames,
                         questionFormats,
@@ -1386,5 +1400,37 @@ public class ChatService {
                 webView.evaluateJavascript("javascript:onResponseComplete();", null);
             });
         }
+    }
+
+    public long updateModel(String name, String[] fields, String[] cards, String[] qfmt, String[] afmt, String css) {
+        // Get modelId
+        Long modelId = mAnkidroid.findModelIdByName(name, fields.length);
+        Uri modelUri = Uri.withAppendedPath(FlashCardsContract.Model.CONTENT_URI, Long.toString(modelId));
+        if (modelUri != null) {
+            ContentValues values = new ContentValues();
+            values.put(FlashCardsContract.Model.CSS, css);
+            mResolver.update(modelUri, values, null, null);
+            // Set the remaining template parameters
+            Uri templatesUri = Uri.withAppendedPath(modelUri, "templates");
+            for (int i = 0; i < cards.length; i++) {
+                Uri uri = Uri.withAppendedPath(templatesUri, Integer.toString(i));
+                values = new ContentValues();
+                values.put(FlashCardsContract.CardTemplate.NAME, cards[i]);
+                values.put(FlashCardsContract.CardTemplate.QUESTION_FORMAT, qfmt[i]);
+                values.put(FlashCardsContract.CardTemplate.ANSWER_FORMAT, afmt[i]);
+                try {
+                    mResolver.update(uri, values, null, null);
+                    //                mResolver.update(uri, values, null, null);
+                }catch (Exception e) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        mResolver.insert(uri, values, null);
+                    } else {
+                        ToastUtil.show(context, String.format("%s: Model is malformed.", name, cards[i]));
+                        return -1;
+                    }
+                }
+            }
+        }
+        return modelId;
     }
 } 

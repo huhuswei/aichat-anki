@@ -63,11 +63,10 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout indicatorBar;
     private TextView currentSelectionText;
     private int isSpinnerContainerVisible = 1;
-
+    private int preTheme = Settings.getInstance(MyApplication.getInstance()).get(Settings.DARK_MODE_INDEX, 0);
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        DarkModeUtils.initDarkMode(MainActivity.this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -271,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
                 
                 // 如果已存在 ChatService，则只更新配置而不是创建新实例
                 if (chatService == null) {
-                    chatService = new ChatService(webView, config.getApiKey(), config.getBaseUrl());
+                    chatService = new ChatService(MainActivity.this, webView, config.getApiKey(), config.getBaseUrl());
                     webView.addJavascriptInterface(chatService, "ChatAndroid");
                     Log.d("MainActivity", "Created new ChatService instance");
                 } else {
@@ -322,12 +321,12 @@ public class MainActivity extends AppCompatActivity {
         TypedValue typedValue = new TypedValue();
         getTheme().resolveAttribute(android.R.attr.windowBackground, typedValue, true);
         webView.setBackgroundColor(typedValue.data);
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
                 DarkModeUtils.isDarkMode(MyApplication.getContext())) {
             ws.setForceDark(WebSettings.FORCE_DARK_ON);
         }
-        
+
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -431,16 +430,9 @@ public class MainActivity extends AppCompatActivity {
         } else if (item.getItemId() == R.id.action_update_anki_template) {
             // 显示确认对话框，提供更准确的信息和指导
             new AlertDialog.Builder(this)
-                .setTitle("创建新Anki模板")
-                .setMessage("这将创建一个新的「AI Chat」模板。要完全应用新模板，请按以下步骤操作：\n\n" +
-                        "1. 创建新模板后，在AnkiDroid中打开「AI Chat」牌组\n" +
-                        "2. 点击右上角菜单，选择「卡片浏览器」\n" +
-                        "3. 筛选出使用旧模板的卡片\n" +
-                        "4. 全选这些卡片，点击右上角菜单\n" +
-                        "5. 选择「更改笔记类型」，将它们转移到新模板\n" +
-                        "6. 重要：必须删除旧模板，否则新添加的卡片仍会使用旧模板\n\n" +
-                        "确定要创建新模板吗？")
-                .setPositiveButton("创建", (dialog, which) -> {
+                .setTitle("")
+                .setMessage("确定更新「AI Chat」模板？")
+                .setPositiveButton("更新", (dialog, which) -> {
                     // 执行更新模板操作
                     updateAnkiTemplate();
                 })

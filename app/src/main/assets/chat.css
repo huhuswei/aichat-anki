@@ -6,13 +6,29 @@
     --color-code-bg: #f6f8fa;
     --color-border: #e1e4e8;
 }
-    
+
 @media (prefers-color-scheme: dark) {
     :root {
     --color-text: #c9d1d9;
     --color-bg: #0d1117;
     --color-code-bg: #161b22;
     --color-border: #30363d;
+    }
+
+    /* Dark mode message styles */
+    .message-bubble {
+        background-color: #161b22;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .user-message .message-bubble {
+        background-color: #2D6D4B; /* 更明显的深绿色用于暗黑模式下的用户消息 */
+        border-bottom-right-radius: 4px;
+    }
+
+    .assistant-message .message-bubble {
+        background-color: #161b22; /* Dark background for assistant messages */
+        border-bottom-left-radius: 4px;
     }
 }
 
@@ -47,7 +63,7 @@ body {
     flex-direction: column;
     margin: 8px 0;
     width: fit-content;
-    max-width: 88%;
+    max-width: 90%;
     font-size: 14px;
     line-height: 1.5;
     position: relative;
@@ -68,7 +84,7 @@ body {
 }
 
 .user-message .message-bubble {
-    background-color: #B8D5C6;
+    background-color: white;
     border-bottom-right-radius: 4px;
 }
 
@@ -82,7 +98,7 @@ body {
 }
 
 .message-content {
-    overflow-x: auto;
+    overflow-x: hidden;
     max-width: 100%;
 }
 
@@ -97,7 +113,7 @@ body {
     gap: 4px;
     opacity: 0;
     transition: all 0.2s ease-in-out;
-    padding: 4px;
+    padding: 3px;
     border-radius: 8px;
     background-color: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
@@ -217,7 +233,7 @@ code {
     padding: 0;
 }
 
-    
+
 code:not(pre code) {
     padding: 0.2em 0.4em;
     background: var(--color-code-bg);
@@ -437,40 +453,40 @@ code:not(pre code) {
     .mermaid::after {
         background: rgba(255, 255, 255, 0.2);
     }
-    
+
     .zoom-button {
         background: #333;
         color: white;
     }
-    
+
     .zoom-button:active {
         background-color: #444;
     }
-    
+
     /* 修复深色模式下sequenceDiagram中participant文字不可见的问题 */
     .mermaid .actor {
         fill: #2b2f38 !important;
     }
-    
+
     .mermaid .actor text, .mermaid text.actor {
         fill: #e0e0e0 !important;
         stroke: none !important;
     }
-    
+
     /* 修复其他可能的对比度问题 */
     .mermaid .messageText {
         fill: #e0e0e0 !important;
         stroke: none !important;
     }
-    
+
     .mermaid .labelText, .mermaid .loopText, .mermaid .loopText > tspan {
         fill: #e0e0e0 !important;
     }
-    
+
     .mermaid .note {
         fill: #4b5062 !important;
     }
-    
+
     .mermaid .noteText {
         fill: #e0e0e0 !important;
     }
@@ -490,17 +506,17 @@ code:not(pre code) {
         width: 36px;
         height: 36px;
     }
-    
+
     .mermaid-hint {
         top: 10px;
         font-size: 12px;
     }
-    
+
     .zoom-controls {
         bottom: 10px;
         padding: 8px;
     }
-    
+
     .zoom-button {
         width: 36px;
         height: 36px;
@@ -692,7 +708,7 @@ code {
 /* 确保公式块不会被截断 */
 .message-content {
     width: 100%;
-    overflow-x: auto;
+    overflow-x: hidden;
     line-height: 1.5;
 }
 
@@ -825,6 +841,7 @@ code {
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
 }
 

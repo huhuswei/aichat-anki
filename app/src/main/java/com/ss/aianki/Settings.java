@@ -15,7 +15,7 @@ public class Settings {
     private static Settings settings = null;
 
     private final static String PREFER_NAME = "settings";    //应用设置名称
-    public final static String DARK_MODE_INDEX = "dark_modea_index";
+    public final static String DARK_MODE_INDEX = "dark_mode_index";
     public final static String CURRENT_DECK_ID = "current_deck_id";
 
     private SharedPreferences sp;
