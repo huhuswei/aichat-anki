@@ -2,6 +2,7 @@
 let chatAndroidReady = false;
 let isSingleTurnMode = false;
 let isGenerating = false;
+let userHasScrolled = false;
 
 // 检查 ChatAndroid 是否可用
 window.checkChatAndroid = function() {
@@ -64,6 +65,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+
+    // 监听用户滚动事件
+    chatContainer.addEventListener('scroll', function() {
+        // 检查内容是否满屏（即是否可以滚动）
+        const isFullContent = chatContainer.scrollHeight > chatContainer.clientHeight;
+
+        if (isFullContent && isGenerating) {
+            // 内容满屏，可以滚动
+            // 检查是否不是在底部
+            if (chatContainer.scrollTop + chatContainer.clientHeight < chatContainer.scrollHeight - 50) {
+                userHasScrolled = true;
+            } else {
+                // 如果滚动到底部，重置标志
+                userHasScrolled = false;
+            }
+        } else {
+            // 内容未满屏，无需处理滚动逻辑
+            userHasScrolled = false;
+        }
+    });
     
     // 绑定事件监听器
     sendButton.addEventListener('click', sendMessage);
@@ -145,7 +166,7 @@ function addMessageToUI(message) {
     // 创建消息气泡
     const messageBubble = document.createElement('div');
     messageBubble.className = 'message-bubble';
-    messageBubble.style.width = '88%';
+    messageBubble.style.width = '90%';
     
     // 消息内容
     const contentDiv = document.createElement('div');
@@ -511,10 +532,11 @@ function updateMessage(message) {
 // 格式化消息内容
 function formatMessage(content) {
     if (!content) return '';
-    
+
     try {
         // Replace <think> tags with details/summary
         content = content.replace(/<think>([\s\S]*?)<\/think>/g, "<details markdown='1'><summary>think</summary>$1</details>");
+        content = processAudioTags(content);
 
         // Save math expressions
         const mathExpressions = [];
@@ -557,9 +579,12 @@ function formatMessage(content) {
 
 // 滚动到底部
 function scrollToBottom() {
-    const chatContainer = document.getElementById('chat-container');
-    if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+    // 如果用户没有手动滚动，则自动滚动到底部
+    if (!userHasScrolled) {
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
     }
 }
 
@@ -580,9 +605,10 @@ function reloadMessages(messages) {
 
 // 初始化会话管理
 document.getElementById('new-session-btn').onclick = function() {
-    if (confirm('确定要开始新会话吗？当前会话将被保存。')) {
+//    if (confirm('确定要开始新会话吗？当前会话将被保存。')) {
+        interruptAction();
         ChatAndroid.newSession();
-    }
+//    }
 };
 
 // 修改历史会话按钮的点击事件
@@ -620,8 +646,29 @@ function loadSession(sessionId) {
     // 更新按钮文本
     showSessionsBtn.textContent = '历史会话';
 
+    interruptAction();
     ChatAndroid.loadSession(sessionId);
 
+}
+
+function getFirstSessionId() {
+    try {
+        // 获取所有会话（空查询获取全部会话）
+        const sessions = JSON.parse(ChatAndroid.searchSessions(''));
+
+        if (sessions && sessions.length > 0) {
+            // 获取第一个会话
+            const firstSession = sessions[0];
+            // 添加安全检查
+            return firstSession && firstSession.id ? firstSession.id : "";
+        } else {
+            return "";
+        }
+    } catch (error) {
+        // 处理JSON解析错误
+        console.error('Error parsing sessions:', error);
+        return "";
+    }
 }
 
 // 搜索会话
@@ -649,6 +696,29 @@ function updateSessionsList(sessions) {
         </div>
     `).join('');
 }
+
+// 加载首个session
+function loadFirstSession() {
+    // 获取所有会话（空查询获取全部会话）
+    const sessions = JSON.parse(ChatAndroid.searchSessions(''));
+
+    if (sessions && sessions.length > 0) {
+        // 获取第一个会话
+        const firstSession = sessions[0];
+        // 加载该会话
+        ChatAndroid.loadSession(firstSession.id);
+    } else {
+        // 如果没有会话，可以创建一个新会话或者显示提示
+        console.log('没有找到任何会话');
+        // 可选：创建一个新会话
+        // createNewSession();
+    }
+}
+
+// 页面加载完成后自动加载首个会话
+document.addEventListener('DOMContentLoaded', function() {
+    loadFirstSession();
+});
 
 // 删除会话
 function deleteSession(sessionId, event) {
@@ -893,7 +963,10 @@ function onResponseComplete() {
     
     // Re-enable the input
     document.getElementById('message-input').disabled = false;
-    
+
+    // 重置滚动状态，恢复自动滚动
+    userHasScrolled = false;
+
     // Update all assistant messages to replace think tags
     const assistantMessages = document.querySelectorAll('.assistant-message');
     assistantMessages.forEach(messageDiv => {
@@ -1018,22 +1091,31 @@ function setupInterruptButton() {
     if (interruptBtn) {
         console.log("Interrupt button found");
         interruptBtn.addEventListener('click', function() {
-            console.log("Interrupt button clicked, isGenerating:", isGenerating);
-            if (isGenerating) {
-                console.log("Calling ChatAndroid.interruptResponse()");
-                ChatAndroid.interruptResponse();
-                toggleSendInterruptButtons(false);
-                isGenerating = false;
-                
-                // Re-enable the input
-                document.getElementById('message-input').disabled = false;
-            }
+        interruptAction();
         });
     } else {
         console.error("Interrupt button not found in the DOM");
     }
 }
 
+function interruptAction() {
+    console.log("Interrupt button clicked, isGenerating:", isGenerating);
+    if (isGenerating) {
+        console.log("Calling ChatAndroid.interruptResponse()");
+        ChatAndroid.interruptResponse();
+        toggleSendInterruptButtons(false);
+        isGenerating = false;
+
+        // Re-enable the input
+        document.getElementById('message-input').disabled = false;
+
+        // 重置滚动状态，恢复自动滚动
+        userHasScrolled = false;
+
+        // 确保最后滚动到底部
+        scrollToBottom();
+    }
+}
 // Auto-resize textarea based on content
 function setupTextareaAutoResize() {
     const textarea = document.getElementById('message-input');
@@ -1170,11 +1252,14 @@ function showMessage(message) {
         container = document.createElement('div');
         container.id = 'prompt-message';
         container.style.position = 'fixed';
+        container.style.whiteSpace = 'nowrap'; // 不换行
+        container.style.overflowX = 'auto'; // 如果内容超出，显示横向滚动条
         container.style.top = '0';
         container.style.left = '0';
-        container.style.width = '90%';
-        container.style.padding = '12px 24px';
-        container.style.backgroundColor = '#333';
+        container.style.width = '95%';
+        container.style.maxHeight = '1.5em'; // 最大高度一行字（使用em单位）
+        container.style.padding = '12px 12px';
+        container.style.backgroundColor = '#333333bf'; // 75% 透明度
         container.style.color = '#fff';
         container.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
         container.style.display = 'flex';
@@ -1218,4 +1303,282 @@ function showMessage(message) {
     else {
         createMessage();
     }
+}
+
+
+//-------tools
+/**
+ * 解析和替换文本中的音频标签
+ * @param {string} text - 包含{()}标签的文本
+ * @returns {string} 替换后的文本
+ */
+function processAudioTags(text) {
+    // 匹配 {(...)} 模式的正则表达式
+    const audioTagRegex = /\{\(([^}]+)\)\}/g;
+
+    return text.replace(audioTagRegex, (match, paramsStr) => {
+        try {
+            // 解析参数
+            const params = parseAudioParams(paramsStr);
+
+            // 生成audio标签
+            const audioTag = generateAudioTag(params);
+
+            return audioTag;
+        } catch (error) {
+            console.warn(`解析音频标签失败: ${match}`, error);
+            return match; // 解析失败时返回原文本
+        }
+    });
+}
+
+/**
+ * 解析音频标签参数
+ * @param {string} paramsStr - 参数字符串
+ * @returns {Object} 解析后的参数对象
+ */
+function parseAudioParams(paramsStr) {
+    const parts = paramsStr.split('|').map(part => part.trim());
+
+    // 默认参数
+    const params = {
+        word: parts[0], // 第一个参数总是单词/短语
+        voicename: 'en_us_male', // 默认发音人
+        langid: 'eng', // 默认语言
+        urlType: 'ou', // 默认URL类型
+        tagType: 'audio' // 标签类型
+    };
+
+    // 根据参数数量处理不同的格式
+    if (parts.length === 2) {
+        // 格式: {(word|audio)}
+        params.tagType = parts[1];
+    } else if (parts.length >= 3) {
+        // 格式: {(word|voicename|langid|urlType|tagType)}
+        if (parts.length >= 2) params.voicename = parts[1];
+        if (parts.length >= 3) params.langid = parts[2];
+        if (parts.length >= 4) params.urlType = parts[3];
+        if (parts.length >= 5) params.tagType = parts[4];
+    }
+
+    return params;
+}
+
+/**
+ * 生成audio标签
+ * @param {Object} params - 参数对象
+ * @returns {string} audio标签HTML
+ */
+function generateAudioTag(params) {
+    const { word, voicename, langid, urlType, tagType } = params;
+
+    // 验证参数
+    if (!word) {
+        throw new Error('缺少单词参数');
+    }
+
+    if (tagType !== 'audio') {
+        throw new Error(`不支持的标签类型: ${tagType}`);
+    }
+
+    // 根据URL类型生成不同的音频URL
+    let audioUrl;
+    if (urlType === 'ou') {
+        // 欧陆URL - 使用之前的TTS API
+        audioUrl = getTTSUrl(word, langid, voicename);
+    } else if (urlType === 'yd') {
+        // 有道URL - 这里需要你提供有道的TTS API格式
+        audioUrl = getYoudaoTTSUrl(word, langid, voicename);
+    } else {
+        throw new Error(`不支持的URL类型: ${urlType}`);
+    }
+
+    // 生成audio标签
+    return `<audio src="${audioUrl}" controls preload="none" data-word="${word}" data-lang="${langid}" data-voice="${voicename}"></audio>`;
+}
+
+/**
+ * 获取有道TTS URL（需要根据实际API实现）
+ * @param {string} word - 单词
+ * @param {string} langid - 语言
+ * @param {string} voicename - 发音人
+ * @returns {string} 有道TTS URL
+ */
+function getYoudaoTTSUrl(word, langid, voicename) {
+    // 这里需要你提供有道的TTS API实现
+    // 暂时返回一个占位URL
+    console.warn('有道TTS URL尚未实现，使用占位URL');
+    return `https://tts.youdao.com/fanyivoice?word=${encodeURIComponent(word)}&le=${langid}&keyfrom=speaker-target`;
+}
+
+/**
+ * 获取TTS URL（使用之前实现的函数）
+ * @param {string} word - 要转换的文本
+ * @param {string} langid - 语言代码
+ * @param {string} voicename - 发音人名称
+ * @returns {string} TTS API URL
+ */
+function getTTSUrl(word, langid = 'eng', voicename = 'en_us_female') {
+    // 参数验证
+    if (!word || typeof word !== 'string') {
+        throw new Error('word参数必须是非空字符串');
+    }
+
+    // 编码文本：QYN + base64(word) + URL编码
+    let base64Encoded;
+    if (typeof Buffer !== 'undefined') {
+        // Node.js环境
+        base64Encoded = Buffer.from(word, 'utf8').toString('base64');
+    } else {
+        // 浏览器环境
+        base64Encoded = btoa(unescape(encodeURIComponent(word)));
+    }
+
+    const encodedText = `QYN${base64Encoded}`.replace(/=/g, '%3D');
+
+    // 构建完整的URL
+    const baseUrl = 'https://api.frdic.com/api/v2/speech/speakweb';
+    const url = `${baseUrl}?langid=${encodeURIComponent(langid)}&voicename=${encodeURIComponent(voicename)}&txt=${encodedText}%0A`;
+
+    return url;
+}
+
+/**
+ * 批量处理文本中的音频标签
+ * @param {string} text - 原始文本
+ * @param {Function} callback - 处理完成后的回调函数
+ * @returns {Promise<string>} 处理后的文本
+ */
+function processTextWithAudioTags(text, callback) {
+    return new Promise((resolve, reject) => {
+        try {
+            const processedText = processAudioTags(text);
+
+            if (callback && typeof callback === 'function') {
+                callback(null, processedText);
+            }
+
+            resolve(processedText);
+        } catch (error) {
+            if (callback && typeof callback === 'function') {
+                callback(error, text);
+            }
+            reject(error);
+        }
+    });
+}
+
+// 工具函数：获取支持的配置
+const AudioTagUtils = {
+    /**
+     * 获取默认配置
+     * @returns {Object} 默认配置
+     */
+    getDefaultConfig() {
+        return {
+            defaultVoicename: 'en_us_male',
+            defaultLangid: 'eng',
+            defaultUrlType: 'ou',
+            defaultTagType: 'audio'
+        };
+    },
+
+    /**
+     * 验证参数是否有效
+     * @param {Object} params - 参数对象
+     * @returns {boolean} 是否有效
+     */
+    validateParams(params) {
+        const required = ['word', 'voicename', 'langid', 'urlType', 'tagType'];
+        return required.every(key => params[key]);
+    },
+
+    /**
+     * 生成简写格式（双参数格式）
+     * @param {string} word - 单词
+     * @returns {string} 简写格式
+     */
+    generateShortFormat(word) {
+        return `{(${word}|audio)}`;
+    },
+
+    /**
+     * 生成长格式（完整参数格式）
+     * @param {string} word - 单词
+     * @param {string} voicename - 发音人
+     * @param {string} langid - 语言
+     * @param {string} urlType - URL类型
+     * @returns {string} 长格式
+     */
+    generateLongFormat(word, voicename = 'en_us_male', langid = 'eng', urlType = 'ou') {
+        return `{(${word}|${voicename}|${langid}|${urlType}|audio)}`;
+    }
+};
+
+// 测试函数
+function testAudioTagProcessing() {
+    console.log('=== 音频标签处理测试 ===\n');
+
+    const testCases = [
+        // 简写格式
+        '这是一个测试：{(hello|audio)}，请听发音。',
+
+        // 完整格式
+        '英文单词：{(world|en_uk_male|eng|ou|audio)}',
+
+        // 中文测试
+        '中文词语：{(你好|zh_cn_female|chn|ou|audio)}',
+
+        // 混合格式
+        `学习单词：
+{(apple|audio)} - 苹果
+{(banana|en_uk_male|eng|ou|audio)} - 香蕉
+{(你好世界|zh_cn_male|chn|ou|audio)} - Hello World`,
+
+        // 复杂文本
+        '句子：{(The quick brown fox|en_us_male|eng|ou|audio)} jumps over the lazy dog.'
+    ];
+
+    testCases.forEach((testCase, index) => {
+        console.log(`测试 ${index + 1}:`);
+        console.log(`输入: ${testCase}`);
+
+        try {
+            const result = processAudioTags(testCase);
+            console.log(`输出: ${result}`);
+            console.log('✓ 处理成功\n');
+        } catch (error) {
+            console.log(`✗ 处理失败: ${error.message}\n`);
+        }
+    });
+}
+
+// 导出函数
+if (typeof module !== 'undefined' && module.exports) {
+    // Node.js环境
+    module.exports = {
+        processAudioTags,
+        processTextWithAudioTags,
+        parseAudioParams,
+        generateAudioTag,
+        getTTSUrl,
+        AudioTagUtils,
+        testAudioTagProcessing
+    };
+} else {
+    // 浏览器环境
+    window.AudioTagProcessor = {
+        processAudioTags,
+        processTextWithAudioTags,
+        parseAudioParams,
+        generateAudioTag,
+        getTTSUrl,
+        AudioTagUtils,
+        testAudioTagProcessing
+    };
+}
+
+// 运行测试
+if (typeof require !== 'undefined' && require.main === module) {
+    testAudioTagProcessing();
 }

@@ -18,24 +18,16 @@ public class Session {
         this.timestamp = System.currentTimeMillis();
         this.messages = new ArrayList<>();
         // 取前10个字符作为标题，如果不足10个字符则全部使用
-        String escapedTitle = firstQuestion.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
-        this.title = escapedTitle.length() > 200 ?
-                escapedTitle.substring(0, 200) + "..." :
+        String escapedTitle = RegexUtil.htmlTagFilter(firstQuestion);                ;
+        this.title = escapedTitle.length() > 30 ?
+                escapedTitle.substring(0, 30) + "..." :
                 escapedTitle;
     }
 
     @SuppressLint("DirectSystemCurrentTimeMillisUsage")
     public Session(String id, String title) {
         this.id = id;
-        this.title = title.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#39;");
+        this.title = title;
         this.timestamp = System.currentTimeMillis();
         this.messages = new ArrayList<>();
     }

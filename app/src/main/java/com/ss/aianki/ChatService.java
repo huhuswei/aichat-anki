@@ -58,6 +58,8 @@ import retrofit2.Call;
 import retrofit2.Response;
 import okhttp3.ResponseBody;
 
+import io.reactivex.disposables.Disposable;
+
 public class ChatService {
     private static String AI_CHAT = "AI Chat";
     private final WebView webView;
@@ -79,8 +81,12 @@ public class ChatService {
     private volatile boolean isReceiving = false;  // 添加标志
     private BufferedReader currentReader = null;   // 添加当前reader引用
     private boolean isSingleTurnMode = false;
+    private Disposable currentSubscription = null;  // 保存当前订阅
+    private ResponseBody currentResponseBody = null;  // 保存当前响应体
     private long selectedDeckId = -1; // Default to -1 (not selected)
     private AIServerConfig config = null;
+    // 添加一个用于中断的 volatile 标志
+    private volatile boolean interruptRequested = false;
     public ChatService(Context aContext, WebView webView, String apiKey, String baseUrl) {
         this.webView = webView;
         this.context = aContext;
@@ -255,9 +261,13 @@ public class ChatService {
             });
             return;
         }
-        
+
+        // 确保清理之前的连接状态
+        cleanupCurrentConnection();
+
         // Set the receiving flag
         isReceiving = true;
+        interruptRequested = false;  // 重置中断标志
         
         String model = getCurrentModel();
         System.out.println("Sending message with model: " + model);
@@ -312,9 +322,12 @@ public class ChatService {
         
         // 保存用户消息
         saveCurrentSession();
-        
+
         executorService.execute(() -> {
             try {
+        // 先清理之前的连接状态
+        cleanupCurrentConnection();
+        
                 isReceiving = true;  // 设置标志
                 // 转换消息格式
                 List<ChatMessage> chatMessages = new ArrayList<>();
@@ -339,48 +352,50 @@ public class ChatService {
                 System.out.println("Sending request with model: " + getCurrentModel());
                 System.out.println("Full request: " + gson.toJson(request));
 
-                openAiApi.streamChatCompletion(request)
+                currentSubscription = openAiApi.streamChatCompletion(request)
                         .subscribe(
-                            responseBody -> {
-                                try {
-                                    BufferedReader reader = new BufferedReader(
-                                        new InputStreamReader(responseBody.byteStream())
-                                    );
-                                    currentReader = reader;  // 保存当前reader引用
-                                    String line;
-                                    while (!Thread.currentThread().isInterrupted() 
-                                            && (line = reader.readLine()) != null) {
-                                        System.out.println("Raw line: " + line);
-                                        handleStreamResponse(line);
-                                    }
-                                } catch (Exception e) {
-                                    if (!Thread.currentThread().isInterrupted()) {
-                                        System.out.println("Error processing response: " + e.getMessage());
-                                        e.printStackTrace();
-                                    }
-                                } finally {
-                                    currentReader = null;
-                                    isReceiving = false;  // 重置标志
+                                responseBody -> {
+                                    currentResponseBody = responseBody;
+                                    processStreamingResponse(responseBody);
+                                },
+                                error -> {
+                                    System.out.println("Error: " + error.getMessage());
+                                    error.printStackTrace();
+                                    mainHandler.post(() -> {
+                                        if (!messageHistory.isEmpty()) {
+                                            Message lastMessage = messageHistory.get(messageHistory.size() - 1);
+                                            lastMessage.setContent("发生错误: " + error.getMessage());
+                                            updateAssistantMessage(lastMessage);
+                                        }
+                                    });
+                                    currentSubscription = null;
+                                    isReceiving = false;
+                                    interruptRequested = false;
+                                },
+                                () -> {
+                                    // 完成时的处理
+                                    currentSubscription = null;
+                                    currentResponseBody = null;
+                                    isReceiving = false;
+                                    interruptRequested = false;
+                                    mainHandler.post(() -> {
+                                        webView.evaluateJavascript("javascript:onResponseComplete();", null);
+                                    });
                                 }
-                            },
-                            error -> {
-                                System.out.println("Error: " + error.getMessage());
-                                error.printStackTrace();
-                                mainHandler.post(() -> {
-                                    assistantMsg.setContent("发生错误: " + error.getMessage());
-                                    updateAssistantMessage(assistantMsg);
-                                });
-                                isReceiving = false;  // 重置标志
-                            }
                         );
             } catch (Exception e) {
                 System.out.println("Error sending message: " + e.getMessage());
                 e.printStackTrace();
                 mainHandler.post(() -> {
-                    assistantMsg.setContent("发生错误: " + e.getMessage());
-                    updateAssistantMessage(assistantMsg);
+                    if (!messageHistory.isEmpty()) {
+                        Message lastMessage = messageHistory.get(messageHistory.size() - 1);
+                        lastMessage.setContent("发生错误: " + e.getMessage());
+                        updateAssistantMessage(lastMessage);
+                    }
                 });
-                isReceiving = false;  // 重置标志
+                currentSubscription = null;
+                isReceiving = false;
+                interruptRequested = false;
             }
         });
     }
@@ -437,6 +452,59 @@ public class ChatService {
             gson.toJson(message)
         );
         webView.evaluateJavascript(updateScript, null);
+    }
+
+    // 修改流式处理的执行部分
+    private void processStreamingResponse(ResponseBody responseBody) {
+        try {
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(responseBody.byteStream())
+            );
+            currentReader = reader;
+
+            String line;
+            while (!interruptRequested && (line = reader.readLine()) != null) {
+                System.out.println("Raw line: " + line);
+                handleStreamResponse(line);
+            }
+
+            if (interruptRequested) {
+                // 被中断的情况已经由 interruptResponse 处理
+                // 这里只需要退出循环
+                System.out.println("Stream interrupted");
+            }
+        } catch (Exception e) {
+            if (!interruptRequested) {
+                // 只有非中断引起的异常才显示错误
+                System.out.println("Error processing response: " + e.getMessage());
+                e.printStackTrace();
+                mainHandler.post(() -> {
+                    if (!messageHistory.isEmpty()) {
+                        Message lastMessage = messageHistory.get(messageHistory.size() - 1);
+                        lastMessage.setContent("发生错误: " + e.getMessage());
+                        updateAssistantMessage(lastMessage);
+                    }
+                    webView.evaluateJavascript("javascript:onResponseComplete();", null);
+                });
+            }
+        } finally {
+            // 清理资源
+            try {
+                if (currentReader != null) {
+                    currentReader.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            currentReader = null;
+            currentSubscription = null;
+            // 注意：这里不重置 isReceiving，因为可能在 interruptResponse 中已经重置
+            // 但如果正常完成，需要重置
+            if (!interruptRequested) {
+                isReceiving = false;
+            }
+            interruptRequested = false;  // 重置中断标志
+        }
     }
 
     @JavascriptInterface
@@ -814,7 +882,6 @@ public class ChatService {
                         JsonObject choice = choices.get(0).getAsJsonObject();
                         JsonObject delta = choice.getAsJsonObject("delta");
                         if (delta != null) {
-                            // 检查 content 字段是否存在且不为 null
                             JsonElement contentElement = delta.get("content");
                             if (contentElement != null && !contentElement.isJsonNull()) {
                                 String content = contentElement.getAsString();
@@ -830,7 +897,6 @@ public class ChatService {
                 // Stream response is complete
                 mainHandler.post(() -> {
                     saveCurrentSession();
-                    // Notify JavaScript response is complete
                     webView.evaluateJavascript("javascript:onResponseComplete();", null);
                 });
             }
@@ -937,17 +1003,36 @@ public class ChatService {
 
     // 添加中断当前响应的方法
     private void interruptCurrentResponse() {
+        interruptRequested = true;  // 设置中断标志
+
+        // 1. 先取消订阅
+        if (currentSubscription != null && !currentSubscription.isDisposed()) {
+            currentSubscription.dispose();
+            currentSubscription = null;
+        }
+
+        // 2. 关闭 ResponseBody
+        if (currentResponseBody != null) {
+            currentResponseBody.close();
+            currentResponseBody = null;
+        }
+
+        // 3. 关闭 reader
         if (currentReader != null) {
             try {
                 currentReader.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Error closing reader: " + e.getMessage());
             }
             currentReader = null;
         }
+
+        // 4. 重置接收标志
         isReceiving = false;
-        System.out.println("Response interrupted");
+
+        System.out.println("Response interrupted and cleaned up");
     }
+
 
     // 添加检查是否正在接收响应的方法
     @JavascriptInterface
@@ -1334,27 +1419,27 @@ public class ChatService {
     public void interruptResponse() {
         if (isReceiving) {
             interruptCurrentResponse();
-            
-            // Notify the user that the response was interrupted
+
+            // 立即更新 UI 显示中断消息
             mainHandler.post(() -> {
                 if (!messageHistory.isEmpty()) {
                     Message lastMessage = messageHistory.get(messageHistory.size() - 1);
                     if ("assistant".equals(lastMessage.getRole())) {
                         String currentContent = lastMessage.getContent();
-                        String newContent = currentContent + "\n\n[已停止生成]";
-                        lastMessage.setContent(newContent);
-                        
-                        // Update the message in the database using the existing method
-                        if (currentSession != null) {
-                            saveCurrentSession();
+                        // 如果已经有内容，添加中断标记
+                        if (!currentContent.isEmpty()) {
+                            lastMessage.setContent(currentContent + "\n\n[已停止生成]");
+                        } else {
+                            // 如果还没有任何内容，直接设置中断消息
+                            lastMessage.setContent("[已停止生成]");
                         }
-                        
-                        // Update the UI
-                        String script = "updateMessageContent('" + lastMessage.getId() + "', " + 
-                                        gson.toJson(newContent) + ");";
-                        webView.evaluateJavascript(script, null);
+                        updateAssistantMessage(lastMessage);
+                        saveCurrentSession();
                     }
                 }
+                // 通知 JavaScript 响应完成
+                webView.evaluateJavascript("javascript:onResponseComplete();", null);
+                Toast.makeText(context, "已停止生成回复", Toast.LENGTH_SHORT).show();
             });
         }
     }
@@ -1382,6 +1467,7 @@ public class ChatService {
             }
             
             // Clear the flag when done
+                currentSubscription = null;
             isReceiving = false;
             currentReader = null;
             
@@ -1432,5 +1518,40 @@ public class ChatService {
             }
         }
         return modelId;
+    }
+
+    /**
+     * 清理当前连接状态
+     */
+    private void cleanupCurrentConnection() {
+        // 取消订阅
+        if (currentSubscription != null && !currentSubscription.isDisposed()) {
+            currentSubscription.dispose();
+            currentSubscription = null;
+        }
+        
+        // 关闭 ResponseBody
+        if (currentResponseBody != null) {
+            try {
+                currentResponseBody.close();
+            } catch (Exception e) {
+                System.out.println("Error closing ResponseBody in cleanup: " + e.getMessage());
+            }
+            currentResponseBody = null;
+        }
+        
+        // 关闭 reader
+        if (currentReader != null) {
+            try {
+                currentReader.close();
+            } catch (Exception e) {
+                System.out.println("Error closing reader in cleanup: " + e.getMessage());
+            }
+            currentReader = null;
+        }
+        
+        // 重置标志
+        isReceiving = false;
+        interruptRequested = false;
     }
 } 

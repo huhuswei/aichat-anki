@@ -1,6 +1,7 @@
 package com.ss.aianki;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -8,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -68,9 +70,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        checkAndStartAnkiDroid(this);
         setContentView(R.layout.activity_main);
 
-        configManager = new AIConfigManager(this);
+        configManager = AIConfigManager.getInstance(MyApplication.getInstance());
         
         // Initialize deck preferences
         deckPreferences = new DeckPreferences(this);
@@ -119,11 +122,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         // 只更新服务器选择器，不重新初始化 ChatService
-//        updateServerSpinner();
+        if(!recreateApp(MainActivity.this)) {
+            updateServerSpinner();
 //        initializeUI();
-        // Load Anki decks
-        loadAnkiDecks();
-        loadPrompts(); // Reload prompts when returning to activity
+            // Load Anki decks
+            loadAnkiDecks();
+            loadPrompts(); // Reload prompts when returning to activity
+        }
+
     }
 
     @Override
@@ -772,6 +778,9 @@ public class MainActivity extends AppCompatActivity {
         currentSelectionText.setSelected(true); // Start marquee
     }
 
+    private void updateAIServerconfig() {
+
+    }
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
@@ -801,5 +810,41 @@ public class MainActivity extends AppCompatActivity {
         Uri uri = Uri.fromParts("package", getPackageName(), null);
         intent.setData(uri);
         startActivity(intent);
+    }
+
+    public static boolean checkAndStartAnkiDroid(Activity activity) {
+        if (AnkiDroidHelper.isApiAvailable(MyApplication.getContext()) && !MyApplication.getAnkiDroid().isAnkiDroidRunning()) {
+            MyApplication.getAnkiDroid().startAnkiDroid();
+
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if(SystemUtils.isBackActivity(activity, Constant.AIANKI_PACKAGE_NAME)) {
+                                            Intent intent = activity.getIntent();
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                            activity.startActivity(intent);
+                                            handler.removeCallbacks(this);
+                                        }
+                                        else {
+                                            handler.postDelayed(this, 200);
+                                        }
+                                    }
+                                },
+                    200);
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean recreateApp(Activity activity) {
+        if (AnkiDroidHelper.isApiAvailable(MyApplication.getContext()) && !MyApplication.getAnkiDroid().isAnkiDroidRunning()) {
+            Intent intent = activity.getIntent();
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            activity.finish();
+            activity.startActivity(intent);
+            return true;
+        }
+        return false;
     }
 } 

@@ -366,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const node = mutation.addedNodes[i];
                     // 检查是否添加了mermaid相关元素
                     if (node.nodeType === 1 && 
-                        (node.classList?.contains('mermaid') || 
+                        (node.classList?.contains('mermaid') ||
                          node.querySelector?.('.mermaid'))) {
                         shouldSetup = true;
                         break;

@@ -11,16 +11,16 @@ import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PromptActivity extends AppCompatActivity {
     private DatabaseHelper dbHelper;
@@ -80,8 +80,9 @@ public class PromptActivity extends AppCompatActivity {
         isAnyCardInEditMode = true;
     }
 
-    private void setupPromptView(View promptView, Prompt prompt, boolean isNew) {
+    private void setupPromptView(View promptView, Prompt prompt, boolean isNewCard) {
         // Find all views
+        AtomicBoolean isNew = new AtomicBoolean(isNewCard);
         LinearLayout editMode = promptView.findViewById(R.id.editMode);
         LinearLayout viewMode = promptView.findViewById(R.id.viewMode);
         TextInputLayout titleLayout = promptView.findViewById(R.id.promptTitleLayout);
@@ -101,7 +102,7 @@ public class PromptActivity extends AppCompatActivity {
         viewContent.setText(prompt.getContent());
 
         // Set initial mode
-        if (isNew) {
+        if (isNew.get()) {
             editMode.setVisibility(View.VISIBLE);
             viewMode.setVisibility(View.GONE);
             titleEdit.requestFocus();
@@ -152,11 +153,13 @@ public class PromptActivity extends AppCompatActivity {
             titleEdit.requestFocus();
             isAnyCardInEditMode = false;
             hasUnsavedNewCard = false;
+            isNew.set(false);
+            loadPrompts();
         });
 
         // Set up cancel button click listener
         btnCancel.setOnClickListener(v -> {
-            if (isNew) {
+            if (isNew.get()) {
                 promptsContainer.removeView(promptView);
                 hasUnsavedNewCard = false;
             } else {

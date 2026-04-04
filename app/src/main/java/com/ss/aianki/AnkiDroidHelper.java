@@ -150,7 +150,21 @@ public class AnkiDroidHelper {
         ActivityCompat.requestPermissions(callbackActivity, new String[]{READ_WRITE_PERMISSION}, callbackCode);
     }
 
+    public boolean isAnkiDroidRunning() {
+        return mApi.getDeckList() != null;
+    }
 
+    public boolean startAnkiDroid() {
+        PackageManager manager = mContext.getPackageManager();
+        Intent i = manager.getLaunchIntentForPackage(ANKI_PACKAGE_NAME);
+        if (i == null) {
+            return false;
+        }
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        i.addCategory(Intent.CATEGORY_LAUNCHER);
+        mContext.startActivity(i);
+        return true;
+    }
 
     /**
      * Whether or not the API is available to use.

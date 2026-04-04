@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import java.util.List;
 
 public class AIConfigManager {
+    private static AIConfigManager aiConfigManager = null;
     private static final String PREF_NAME = "ai_config";
     private static final String KEY_CONFIGS = "configs";
     private static final String KEY_CURRENT = "current_config";
@@ -15,17 +16,23 @@ public class AIConfigManager {
     private final SharedPreferences prefs;
     private final Gson gson;
     
-    public AIConfigManager(Context context) {
+    private AIConfigManager(Context context) {
         prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         gson = new Gson();
         
         // 如果没有配置，添加默认配置
         if (getAllConfigs().isEmpty()) {
             AIServerConfig defaultConfig = new AIServerConfig();
-            defaultConfig.setName("默认服务器");
             saveConfig(defaultConfig);
             setCurrentConfig(defaultConfig.getId());
         }
+    }
+
+    public static AIConfigManager getInstance(Context context) {
+        if (aiConfigManager == null) {
+            aiConfigManager = new AIConfigManager(context);
+        }
+        return aiConfigManager;
     }
     
     public void saveConfig(AIServerConfig config) {
@@ -45,7 +52,7 @@ public class AIConfigManager {
         
         prefs.edit()
             .putString(KEY_CONFIGS, gson.toJson(configs))
-            .apply();
+            .commit();
     }
     
     public List<AIServerConfig> getAllConfigs() {
@@ -58,13 +65,13 @@ public class AIConfigManager {
         configs.removeIf(config -> config.getId().equals(configId));
         prefs.edit()
             .putString(KEY_CONFIGS, gson.toJson(configs))
-            .apply();
+            .commit();
     }
     
     public void setCurrentConfig(String configId) {
         prefs.edit()
             .putString(KEY_CURRENT, configId)
-            .apply();
+            .commit();
     }
     
     public AIServerConfig getCurrentConfig() {

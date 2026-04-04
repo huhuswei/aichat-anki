@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "aichat-anki"
-include ':app' 
+include ':app'

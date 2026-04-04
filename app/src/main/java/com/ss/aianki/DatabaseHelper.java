@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.SystemClock;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,8 +37,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_PROMPT_TITLE = "title";
     private static final String COLUMN_PROMPT_CONTENT = "content";
 
+    /**
+     * 获取自定义数据库路径
+     */
+    private static String getDatabasePath(Context context) {
+        // 获取应用的外部存储目录
+        File externalDir = context.getExternalFilesDir(null);
+        if (externalDir != null) {
+            // 创建 android/data/com.ss.aianki/ 目录
+            File dbDir = new File(externalDir.getParent());
+            if (!dbDir.exists()) {
+                dbDir.mkdirs();
+            }
+
+            // 返回完整的数据库文件路径
+            return new File(dbDir, DATABASE_NAME).getAbsolutePath();
+        } else {
+            // 如果外部存储不可用，使用默认的内部存储
+            return DATABASE_NAME;
+        }
+    }
+
     public DatabaseHelper(Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        super(context, getDatabasePath(context), null, DATABASE_VERSION);
     }
 
     @Override

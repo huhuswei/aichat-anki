@@ -16,13 +16,10 @@ public class AIServerConfig {
     public AIServerConfig() {
         // 修改默认值
         this.id = String.valueOf(System.currentTimeMillis());//System.currentTimeMillis());
-        this.name = "硅基流动";
-        this.baseUrl = "https://api.siliconflow.cn/";
+        this.name = "";
+        this.baseUrl = "https://api.simple.cn/";
         this.apiKey = "";
-        this.models = "Qwen/QwQ-32B;"
-                + "deepseek-ai/DeepSeek-R1;deepseek-ai/DeepSeek-V3;"
-                + "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B;deepseek-ai/DeepSeek-R1-Distill-Qwen-14B;"
-                + "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B;deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B";
+        this.models = "";
         this.temperature = 0.6f;
         this.lastSelectedModel = null;  // 默认为 null
     }
