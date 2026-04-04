@@ -111,7 +111,7 @@ public class SettingsActivity extends AppCompatActivity {
                             StringBuilder modelsBuilder = new StringBuilder();
                             for (int i = 0; i < data.length(); i++) {
                                 org.json.JSONObject model = data.getJSONObject(i);
-                                if (i > 0) modelsBuilder.append(";");
+                                if (i > 0) modelsBuilder.append(";\n");
                                 modelsBuilder.append(model.getString("id"));
                             }
 
