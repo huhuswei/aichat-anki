@@ -3,6 +3,8 @@ let chatAndroidReady = false;
 let isSingleTurnMode = false;
 let isGenerating = false;
 let userHasScrolled = false;
+let currentMessageIndex = -1; // 当前显示的消息索引
+let locatorInitialized = false; // 定位器是否已初始化
 
 // 检查 ChatAndroid 是否可用
 window.checkChatAndroid = function() {
@@ -29,26 +31,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatContainer = document.getElementById('chat-container');
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
-    
+
+    // 尽早检测状态栏高度
+    updateStatusBarHeight();
+
     // Setup interrupt button (only call once)
     setupInterruptButton();
-    
+
+    // Settings gear is now in the top-right menu
+
     // 发送消息处理
     function sendMessage() {
         const messageInput = document.getElementById('message-input');
         var content = messageInput.value.trim();
 
+        // 如果有附件，以 JSON 格式传递文本和文件数据
+        var hasFiles = attachedFiles.length > 0;
+        if (hasFiles) {
+            var fileData = attachedFiles.map(function(f) {
+                return { name: f.name, type: f.type, data: f.data };
+            });
+            content = JSON.stringify({ text: content, files: fileData });
+        }
+
         if (content) {
             // Toggle to interrupt button
             isGenerating = true;
             toggleSendInterruptButtons(true);
-            
+
             // Disable the input while generating
             messageInput.disabled = true;
-            
+
             // Clear the input
             messageInput.value = '';
-            
+
             // Call the Java method to send the message
             if (chatAndroidReady) {
                 var container = document.getElementById('prompt-message');
@@ -63,11 +79,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     ChatAndroid.sendMessage(content);
                 }
             }
+
+            // 清空附件
+            if (hasFiles) {
+                attachedFiles = [];
+                renderAttachments();
+            }
         }
     }
 
     // 监听用户滚动事件
     chatContainer.addEventListener('scroll', function() {
+        // 磨砂节流
+        onChatScrollForFrost();
+
         // 检查内容是否满屏（即是否可以滚动）
         const isFullContent = chatContainer.scrollHeight > chatContainer.clientHeight;
 
@@ -85,30 +110,25 @@ document.addEventListener('DOMContentLoaded', function() {
             userHasScrolled = false;
         }
     });
-    
+
     // 绑定事件监听器
     sendButton.addEventListener('click', sendMessage);
-    // messageInput.addEventListener('keypress', function(e) {
-    //     if (e.key === 'Enter') {
-    //         sendMessage();
-    //     }
-    // });
-    
+
     // 初始检查
     checkChatAndroid();
 
     // 获取模态框元素
     const sessionsModal = document.getElementById('sessions-modal');
-    
+
     // 点击模态框背景时关闭
     sessionsModal.addEventListener('click', function(e) {
         // 如果点击的是模态框本身（而不是内容区域）
         if (e.target === sessionsModal) {
             sessionsModal.style.display = 'none';
-            document.getElementById('show-sessions-btn').textContent = '历史会话';
+            document.getElementById('show-sessions-btn').textContent = '≡';
         }
     });
-    
+
     // 点击关闭按钮时关闭
     const closeButton = sessionsModal.querySelector('.modal-close');
     if (closeButton) {
@@ -153,6 +173,9 @@ function addMessageToUI(message) {
         console.error('Invalid message:', message);
         return;
     }
+    if (message.role === 'system') {
+        return;
+    }
     
     const messageId = 'message-' + message.id;
     console.log('Adding message:', messageId);
@@ -166,12 +189,38 @@ function addMessageToUI(message) {
     // 创建消息气泡
     const messageBubble = document.createElement('div');
     messageBubble.className = 'message-bubble';
-    messageBubble.style.width = '90%';
+    messageBubble.style.width = '100%';
     
     // 消息内容
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content markdown-body';
-    contentDiv.innerHTML = formatMessage(message.content || '');
+
+    // 检查是否是带文件附件的用户消息
+    var displayContent = message.content || '';
+    var fileAttachmentsHtml = '';
+    if (message.role === 'user' && displayContent.indexOf('_hasFiles') > -1) {
+        try {
+            var fileMeta = JSON.parse(displayContent);
+            displayContent = fileMeta._text || '';
+            if (fileMeta._files && fileMeta._files.length > 0) {
+                fileAttachmentsHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">';
+                fileMeta._files.forEach(function(f) {
+                    if (f.type && f.type.startsWith('image/')) {
+                        fileAttachmentsHtml += '<div class="attach-image" data-src="' + f.data + '" style="position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid rgba(128,128,128,0.2);flex-shrink:0;cursor:pointer">' +
+                            '<img src="' + f.data + '" style="width:100%;height:100%;object-fit:cover;display:block">' +
+                            '</div>';
+                    } else {
+                        fileAttachmentsHtml += '<div style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(128,128,128,0.08);border-radius:6px;font-size:12px;color:#666;white-space:nowrap">' +
+                            '📎 ' + f.name +
+                            '</div>';
+                    }
+                });
+                fileAttachmentsHtml += '</div>';
+            }
+        } catch (e) {}
+    }
+
+    contentDiv.innerHTML = formatMessage(displayContent) + fileAttachmentsHtml;
     messageBubble.appendChild(contentDiv);
     
     // 源代码编辑区域 - 放在消息气泡内部
@@ -371,11 +420,30 @@ function addMessageToUI(message) {
             updateButtonsVisibility(messageDiv);
         };
         
+        // 添加删除按钮
+        const deleteButton = document.createElement('button');
+        deleteButton.className = 'message-button delete-message';
+        deleteButton.innerHTML = '🗑️';
+        deleteButton.title = '删除消息';
+        deleteButton.onclick = function(e) {
+            e.stopPropagation();
+
+            // 使用自定义确认弹窗代替 confirm（Android WebView 不支持原生 confirm）
+            showConfirmDialog('确定要删除这条消息吗？', function() {
+                if (ChatAndroid.deleteMessage(message.id)) {
+                    // 删除成功，前端会通过 removeMessageFromUI 更新
+                } else {
+                    showToast('删除失败', true);
+                }
+            });
+        };
+
         // 添加按钮到按钮容器
         buttonsDiv.appendChild(saveButton);
         buttonsDiv.appendChild(saveSourceButton);
         buttonsDiv.appendChild(toggleButton);
-        
+        buttonsDiv.appendChild(deleteButton);
+
         messageDiv.appendChild(buttonsDiv);
     }
     
@@ -410,13 +478,23 @@ function addMessageToUI(message) {
     console.log('Created new message element:', messageId);
     scrollToBottom();
 
+    // 更新消息定位器
+    updateMessageLocator();
+
     // 添加触摸事件监听
     messageDiv.addEventListener('click', function(e) {
         // 如果点击的是按钮，不处理
         if (e.target.closest('.message-buttons')) {
             return;
         }
-        
+
+        // 如果点击的是图片，不阻止冒泡（交给 Viewer.js 处理）
+        if (e.target.closest('.message-content img') || e.target.closest('.attach-image')) {
+            return;
+        }
+
+        e.stopPropagation();  // 阻止冒泡，避免触发全局click处理器
+
         // 移除之前的标记
         document.querySelectorAll('.message.last-clicked').forEach(msg => {
             msg.classList.remove('last-clicked');
@@ -626,14 +704,23 @@ document.getElementById('show-sessions-btn').onclick = function() {
         const sessions = JSON.parse(ChatAndroid.getSessionList());
         updateSessionsList(sessions);
         modal.style.display = 'flex';
-        this.textContent = '关闭历史';
+        this.textContent = '≡';
     }
 };
+
+// prompt panel
+document.getElementById('toggle-config-btn').onclick = function() {
+//    if (confirm('确定要开始新会话吗？当前会话将被保存。')) {
+        MainAndroid.toggleSimpleUI();
+//    }
+};
+
+// ===== 浮动菜单（已移至 menu.js） =====
 
 // 修改关闭按钮的点击事件
 document.querySelector('.modal-close').onclick = function() {
     document.getElementById('sessions-modal').style.display = 'none';
-    document.getElementById('show-sessions-btn').textContent = '历史会话';
+    document.getElementById('show-sessions-btn').textContent = '≡';
 };
 
 // 加载会话
@@ -644,7 +731,7 @@ function loadSession(sessionId) {
     // 隐藏模态框
     modal.style.display = 'none';
     // 更新按钮文本
-    showSessionsBtn.textContent = '历史会话';
+    showSessionsBtn.textContent = '≡';
 
     interruptAction();
     ChatAndroid.loadSession(sessionId);
@@ -748,6 +835,45 @@ function deleteSession(sessionId, event) {
 //    }
 }
 
+// 显示自定义确认弹窗（替代 confirm，因为 Android WebView 不支持原生 confirm）
+function showConfirmDialog(message, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.onclick = function(e) {
+        if (e.target === overlay) overlay.remove();
+    };
+
+    const dialog = document.createElement('div');
+    dialog.className = 'confirm-dialog';
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'confirm-message';
+    msgDiv.textContent = message;
+
+    const btnGroup = document.createElement('div');
+    btnGroup.className = 'confirm-buttons';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'confirm-btn confirm-cancel';
+    cancelBtn.textContent = '取消';
+    cancelBtn.onclick = function() { overlay.remove(); };
+
+    const okBtn = document.createElement('button');
+    okBtn.className = 'confirm-btn confirm-ok';
+    okBtn.textContent = '确定';
+    okBtn.onclick = function() {
+        overlay.remove();
+        if (onConfirm) onConfirm();
+    };
+
+    btnGroup.appendChild(cancelBtn);
+    btnGroup.appendChild(okBtn);
+    dialog.appendChild(msgDiv);
+    dialog.appendChild(btnGroup);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+}
+
 // 显示 Toast 提示
 function showToast(message, isError = false) {
     const toast = document.createElement('div');
@@ -823,7 +949,7 @@ function updateButtonsVisibility(messageDiv) {
     if (isUserMessage) {
         buttonsDiv.style.left = (rect.left - 40) + 'px';
     } else {
-        buttonsDiv.style.left = (rect.right + 8) + 'px';
+        buttonsDiv.style.left = (rect.right - 1) + 'px';
     }
     
     // 计算按钮高度和消息高度
@@ -835,7 +961,8 @@ function updateButtonsVisibility(messageDiv) {
     
     // 确保按钮不会超出视窗顶部和输入框
     const maxTop = inputRect.top - buttonHeight - 8;
-    const minTop = 8;
+    var statusH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--status-bar-height')) || 0;
+    const minTop = statusH + 8;
     
     // 调整最终位置
     let adjustedTop = Math.max(minTop, Math.min(maxTop, top));
@@ -849,7 +976,8 @@ function updateButtonsVisibility(messageDiv) {
 document.addEventListener('click', function(e) {
     // 如果点击的是消息或其子元素
     const messageDiv = e.target.closest('.message');
-    if (messageDiv && buttonsDiv.style.opacity == '0') {
+    const buttonsDiv = messageDiv ? messageDiv.querySelector('.message-buttons') : null;
+    if (messageDiv && buttonsDiv && buttonsDiv.style.opacity == '0') {
         // 检查是否在编辑模式
         const sourceTextarea = messageDiv.querySelector('.source-editor');
         const isEditing = sourceTextarea && sourceTextarea.style.display === 'block';
@@ -876,26 +1004,193 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// 添加滚动处理
-let isScrolling;
+// 简化版：滚动时实时更新定位器
 document.getElementById('chat-container').addEventListener('scroll', function() {
-    // 隐藏所有按钮
+    const chatContainer = this;
+    const scrollTop = chatContainer.scrollTop;
+
+    // 隐藏按钮
     document.querySelectorAll('.message-buttons').forEach(buttons => {
         buttons.style.opacity = '0';
         buttons.style.pointerEvents = 'none';
     });
 
-    // 清除之前的定时器
-    clearTimeout(isScrolling);
+    // 更新滚动进度条
+    updateScrollProgress();
 
-    // 设置新的定时器，滚动停止后恢复最后点击的消息的按钮
-    isScrolling = setTimeout(() => {
-        const lastClickedMessage = document.querySelector('.message.last-clicked');
-        if (lastClickedMessage) {
-            updateButtonsVisibility(lastClickedMessage);
+    // 获取所有消息
+    const messages = chatContainer.querySelectorAll('.message');
+    if (messages.length <= 1) {
+        hideLocator();
+        return;
+    }
+
+    // 计算视口区域
+    const viewportTop = scrollTop;
+    const viewportBottom = scrollTop + chatContainer.clientHeight;
+
+    // 找到视口内最靠上的消息
+    let bestIndex = 0;
+    let minTop = Infinity;
+
+    messages.forEach((message, index) => {
+        const msgTop = message.offsetTop;
+        const msgBottom = msgTop + message.offsetHeight;
+
+        // 检查消息是否在视口内（至少有一部分可见）
+        if (msgBottom > viewportTop && msgTop < viewportBottom) {
+            // 计算消息顶部到视口顶部的距离
+            const distFromTop = msgTop - viewportTop;
+            // 优先选择视口内最靠上的消息
+            if (distFromTop < minTop) {
+                minTop = distFromTop;
+                bestIndex = index;
+            }
         }
-    }, 100); // 100ms 后恢复
-}); 
+    });
+
+    // 如果没有消息在视口内（罕见情况），选择离视口最近的消息
+    if (minTop === Infinity) {
+        let minDistance = Infinity;
+        messages.forEach((message, index) => {
+            const msgTop = message.offsetTop;
+            const msgBottom = msgTop + message.offsetHeight;
+            const msgCenter = (msgTop + msgBottom) / 2;
+            const distance = Math.abs(msgCenter - viewportTop);
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                bestIndex = index;
+            }
+        });
+    }
+
+    // 更新全局索引
+    currentMessageIndex = bestIndex;
+
+    // 立即更新定位器
+    updateLocatorRealtime(messages, currentMessageIndex);
+});
+
+// 实时更新定位器函数
+function updateLocatorRealtime(messages, activeIndex) {
+    // 检查是否启用了定位器
+    var showLocator = localStorage.getItem('chat_show_locator');
+    if (showLocator === 'false') {
+        return; // 用户关闭了定位器，不更新
+    }
+
+    let locator = document.getElementById('message-locator');
+
+    // 如果定位器不存在，创建它
+    if (!locator) {
+        // 再次检查设置
+        if (localStorage.getItem('chat_show_locator') === 'false') {
+            return;
+        }
+        locator = document.createElement('div');
+        locator.className = 'message-locator';
+        locator.id = 'message-locator';
+        document.body.appendChild(locator);
+    }
+
+    // 重建所有定位点
+    locator.innerHTML = '';
+    messages.forEach((message, index) => {
+        const dot = document.createElement('button');
+        dot.className = 'locator-dot';
+        dot.dataset.index = index;
+
+        // 添加用户/助手类型
+        if (message.classList.contains('user-message')) {
+            dot.classList.add('user');
+        } else {
+            dot.classList.add('assistant');
+        }
+
+        // 设置 active 状态
+        if (index === activeIndex) {
+            dot.classList.add('active');
+        }
+
+        // 点击事件
+        dot.onclick = function(e) {
+            e.stopPropagation();
+            scrollToMessage(index);
+        };
+
+        locator.appendChild(dot);
+    });
+
+    // 显示定位器
+    locator.classList.add('visible');
+
+    // 检查是否需要添加"滚动到底部"按钮
+    const chatContainer = document.getElementById('chat-container');
+    if (chatContainer.scrollHeight > chatContainer.clientHeight + 100) {
+        // 内容过长，添加到底部按钮
+        const bottomDot = document.createElement('button');
+        bottomDot.className = 'locator-dot locator-bottom';
+        bottomDot.title = '滚动到底部';
+        bottomDot.onclick = function(e) {
+            e.stopPropagation();
+            chatContainer.scrollTo({
+                top: chatContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        };
+        locator.appendChild(bottomDot);
+    }
+
+    // 3秒后隐藏
+    if (locatorHideTimer) clearTimeout(locatorHideTimer);
+    locatorHideTimer = setTimeout(() => {
+        locator.classList.remove('visible');
+    }, 3000);
+}
+
+// 实时更新定位器高亮（只更新 dot 的 active 状态，不重建 DOM）
+// 注意：此函数现在主要在滚动事件中直接处理，这里保留作为备用
+function updateLocatorActiveDot() {
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) return;
+
+    const messages = chatContainer.querySelectorAll('.message');
+    if (messages.length <= 1) {
+        hideLocator();
+        return;
+    }
+
+    let locator = document.getElementById('message-locator');
+    if (!locator) return;
+
+    const dots = locator.querySelectorAll('.locator-dot');
+    dots.forEach((dot, index) => {
+        if (index === currentMessageIndex) {
+            dot.classList.add('active');
+        } else {
+            dot.classList.remove('active');
+        }
+    });
+
+    // 确保定位器可见
+    locator.classList.add('visible');
+}
+
+// 实时更新定位器高亮
+function updateLocatorHighlight() {
+    const locator = document.getElementById('message-locator');
+    if (!locator) return;
+
+    const dots = locator.querySelectorAll('.locator-dot');
+    dots.forEach((dot, index) => {
+        if (index === currentMessageIndex) {
+            dot.classList.add('active');
+        } else {
+            dot.classList.remove('active');
+        }
+    });
+} 
 
 // 修改 updateMessageContent 函数
 function updateMessageContent(messageId, content) {
@@ -938,6 +1233,31 @@ function updateMessageContent(messageId, content) {
             // 滚动到底部
             scrollToBottom();
         }
+    }
+}
+
+// 从 UI 中删除消息
+function removeMessageFromUI(messageId) {
+    const messageDiv = document.getElementById('message-' + messageId);
+    if (messageDiv) {
+        // 添加淡出动画
+        messageDiv.style.transition = 'opacity 0.3s, transform 0.3s';
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'scale(0.9)';
+
+        // 动画结束后移除元素
+        setTimeout(() => {
+            messageDiv.remove();
+
+            // 隐藏当前显示的按钮（因为消息已被删除）
+            document.querySelectorAll('.message-buttons').forEach(buttons => {
+                buttons.style.opacity = '0';
+                buttons.style.pointerEvents = 'none';
+            });
+
+            // 更新消息定位器
+            updateMessageLocator();
+        }, 300);
     }
 }
 
@@ -1028,6 +1348,43 @@ function debugSourceContent(messageId) {
     alert('Raw content: ' + rawContent);
 }
 
+// ===== 公式识别按钮 =====
+// 提示词显隐按钮
+document.getElementById('toggle-prompts-btn').addEventListener('click', function() {
+    var pc = document.getElementById('prompt-container');
+    if (!pc) return;
+    var hidden = pc.style.display === 'none';
+    pc.style.display = hidden ? '' : 'none';
+    this.style.opacity = hidden ? '1' : '0.4';
+    localStorage.setItem('chat_prompts_hidden', hidden ? 'false' : 'true');
+    // 隐藏/显示 prompt 时调整 message-input 的上边距
+    var msgInput = document.getElementById('message-input');
+    if (msgInput) {
+        msgInput.style.marginTop = hidden ? '8px' : '4px';
+    }
+});
+
+document.getElementById('formula-btn').addEventListener('click', function() {
+    if (typeof MainAndroid !== 'undefined') {
+        MainAndroid.openFormulaActivity();
+    } else {
+        console.error('MainAndroid not available');
+    }
+});
+
+// 处理公式识别返回的文本
+function handleFormulaText(text) {
+    const input = document.getElementById('message-input');
+    if (input) {
+        input.value = text;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus();
+        // 将光标移动到末尾
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+    }
+}
+
 // 初始化对话模式切换按钮
 document.getElementById('toggle-mode-button').addEventListener('click', function() {
     isSingleTurnMode = !isSingleTurnMode;
@@ -1045,7 +1402,7 @@ document.getElementById('toggle-mode-button').addEventListener('click', function
 // 更新模式指示器
 function updateModeIndicator() {
     const modeIndicator = document.getElementById('mode-indicator');
-    modeIndicator.textContent = isSingleTurnMode ? '单轮对话' : '多轮对话';
+    modeIndicator.textContent = isSingleTurnMode ? '⇆' : '⤻';
     
     // 更新文档类，以便应用不同的样式
     if (isSingleTurnMode) {
@@ -1173,14 +1530,6 @@ function scrollToElement(element) {
     }
 }
 
-// Add event listener for focus events
-document.addEventListener('focus', function(e) {
-    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
-        setTimeout(() => {
-            scrollToElement(e.target);
-        }, 300); // Delay to allow keyboard to fully appear
-    }
-}, true);
 
 // Call this whenever new content is added
 function ensureVisible(element) {
@@ -1188,6 +1537,7 @@ function ensureVisible(element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
 }
+
 
 function handleSharedText(text) {
     const input = document.getElementById('message-input');
@@ -1582,3 +1932,1036 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof require !== 'undefined' && require.main === module) {
     testAudioTagProcessing();
 }
+
+// ========== 滚动进度条功能 ==========
+function setupScrollProgressBar() {
+    // 延迟确保 DOM 完全渲染
+    setTimeout(function() {
+        initScrollProgressBar();
+    }, 500);
+}
+
+function initScrollProgressBar() {
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) {
+        console.error('chat-container not found');
+        return;
+    }
+
+    // 检查是否已有进度条，避免重复创建
+    if (document.getElementById('scroll-progress-container')) {
+        return;
+    }
+
+    // 创建进度条容器
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'scroll-progress-container';
+    progressContainer.id = 'scroll-progress-container';
+
+    // 创建进度条
+    const progressBar = document.createElement('div');
+    progressBar.className = 'scroll-progress-bar';
+    progressBar.id = 'scroll-progress-bar';
+    progressContainer.appendChild(progressBar);
+
+    document.body.appendChild(progressContainer);
+
+    console.log('Scroll progress bar created');
+
+    // 监听滚动事件
+    chatContainer.addEventListener('scroll', updateScrollProgress);
+
+    // 监听触摸移动事件（移动端优化）
+    chatContainer.addEventListener('touchmove', updateScrollProgress);
+
+    // 初始更新
+    updateScrollProgress();
+}
+
+function updateScrollProgress() {
+    requestAnimationFrame(function() {
+        const chatContainer = document.getElementById('chat-container');
+        const progressBar = document.getElementById('scroll-progress-bar');
+        const progressContainer = document.getElementById('scroll-progress-container');
+
+        if (!chatContainer || !progressBar || !progressContainer) return;
+
+        // 如果内容不需要滚动，隐藏进度条
+        const scrollHeight = chatContainer.scrollHeight - chatContainer.clientHeight;
+        if (scrollHeight <= 0) {
+            progressContainer.style.display = 'none';
+            return;
+        }
+
+        // 显示进度条
+        progressContainer.style.display = 'block';
+
+        // 计算滚动进度
+        const scrollTop = chatContainer.scrollTop;
+        const progress = (scrollTop / scrollHeight) * 100;
+        progressBar.style.width = Math.min(progress, 100) + '%';
+    });
+}
+
+// ========== 消息定位功能 ==========
+function setupMessageLocator() {
+    // 延迟确保 DOM 完全渲染
+    setTimeout(function() {
+        initMessageLocator();
+    }, 500);
+}
+
+function initMessageLocator() {
+    // 检查是否启用了定位器
+    var showLocator = localStorage.getItem('chat_show_locator');
+    if (showLocator === 'false') {
+        return; // 用户关闭了定位器，不初始化
+    }
+
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) return;
+
+    // 检查是否已有定位器，避免重复创建
+    var existingLocator = document.getElementById('message-locator');
+    if (existingLocator) {
+        // 如果已有，移除后重建（确保状态正确）
+        existingLocator.remove();
+    }
+
+    // 创建定位器容器
+    const locator = document.createElement('div');
+    locator.className = 'message-locator';
+    locator.id = 'message-locator';
+    // 确保正确的样式
+    locator.style.cssText = '';
+
+    document.body.appendChild(locator);
+
+    console.log('Message locator created');
+
+    // 初始更新
+    updateMessageLocator();
+}
+
+// 定位器隐藏定时器
+let locatorHideTimer = null;
+
+function updateMessageLocator() {
+    // 检查是否启用了定位器
+    var showLocator = localStorage.getItem('chat_show_locator');
+    if (showLocator === 'false') {
+        return; // 用户关闭了定位器，不更新
+    }
+
+    const chatContainer = document.getElementById('chat-container');
+    let locator = document.getElementById('message-locator');
+
+    // 如果定位器不存在，先检查是否应该创建
+    if (!locator && chatContainer) {
+        // 再次检查设置，如果关闭了就不创建
+        if (localStorage.getItem('chat_show_locator') === 'false') {
+            return;
+        }
+        locator = document.createElement('div');
+        locator.className = 'message-locator';
+        locator.id = 'message-locator';
+        document.body.appendChild(locator);
+    }
+
+    if (!chatContainer || !locator) return;
+
+    // 获取所有消息
+    const messages = chatContainer.querySelectorAll('.message');
+
+    // 清空定位器
+    locator.innerHTML = '';
+
+    if (messages.length <= 1) {
+        // 只有一条或更少消息时隐藏定位器
+        locator.classList.remove('visible');
+        return;
+    }
+
+    // 如果 currentMessageIndex 为 -1，初始化为最后一条消息的索引
+    if (currentMessageIndex === -1) {
+        currentMessageIndex = messages.length - 1;
+    }
+
+    // 为每条消息创建定位点 - 均匀分布
+    messages.forEach((message, index) => {
+        const dot = document.createElement('button');
+        dot.className = 'locator-dot';
+
+        // 根据消息类型添加类名
+        if (message.classList.contains('user-message')) {
+            dot.classList.add('user');
+        } else {
+            dot.classList.add('assistant');
+        }
+
+        // 如果是当前显示的消息，添加active类
+        if (index === currentMessageIndex) {
+            dot.classList.add('active');
+        }
+
+        // 点击定位到对应消息
+        dot.onclick = function(e) {
+            e.stopPropagation();
+            scrollToMessage(index);
+        };
+
+        locator.appendChild(dot);
+    });
+
+    // 确保定位器可见
+    locator.classList.add('visible');
+
+    // 清除之前的定时器
+    if (locatorHideTimer) {
+        clearTimeout(locatorHideTimer);
+    }
+
+    // 3秒后隐藏
+    locatorHideTimer = setTimeout(function() {
+        if (locator) {
+            locator.classList.remove('visible');
+        }
+    }, 3000);
+}
+
+// 显示定位器（滚动时调用）
+// rebuild: 是否重建定位器，true=重建并更新高亮，false=只显示不重建
+function showLocator(rebuild = true) {
+    // 检查是否启用了定位器
+    var showLocator = localStorage.getItem('chat_show_locator');
+    if (showLocator === 'false') {
+        return; // 用户关闭了定位器，不显示
+    }
+
+    const chatContainer = document.getElementById('chat-container');
+    let locator = document.getElementById('message-locator');
+
+    if (!chatContainer) return;
+
+    // 获取消息数量
+    const messages = chatContainer.querySelectorAll('.message');
+    if (messages.length <= 1) return;
+
+    // 如果定位器不存在，创建它
+    if (!locator) {
+        // 再次检查设置
+        if (localStorage.getItem('chat_show_locator') === 'false') {
+            return;
+        }
+        locator = document.createElement('div');
+        locator.className = 'message-locator';
+        locator.id = 'message-locator';
+        document.body.appendChild(locator);
+    }
+
+    // 如果需要重建
+    if (rebuild) {
+        // 重建定位点 - 均匀分布
+        locator.innerHTML = '';
+
+        // 如果 currentMessageIndex 为 -1，初始化为最后一条消息的索引
+        if (currentMessageIndex === -1) {
+            currentMessageIndex = messages.length - 1;
+        }
+
+        // 直接使用 currentMessageIndex，不重新计算
+        messages.forEach((message, index) => {
+        const dot = document.createElement('button');
+        dot.className = 'locator-dot';
+
+        // 用户消息用绿色
+        if (message.classList.contains('user-message')) {
+            dot.classList.add('user');
+        } else {
+            dot.classList.add('assistant');
+        }
+
+        // 当前消息高亮
+        if (index === currentMessageIndex) {
+            dot.classList.add('active');
+        }
+
+        dot.onclick = function(e) {
+            e.stopPropagation();
+            scrollToMessage(index);
+        };
+
+        locator.appendChild(dot);
+        });
+
+        // 显示定位器
+        locator.classList.add('visible');
+    } else {
+        // 只显示，不重建
+        locator.classList.add('visible');
+    }
+
+    // 清除之前的定时器
+    if (locatorHideTimer) {
+        clearTimeout(locatorHideTimer);
+    }
+
+    // 3秒后隐藏
+    locatorHideTimer = setTimeout(function() {
+        if (locator) {
+            locator.classList.remove('visible');
+        }
+    }, 3000);
+}
+
+// 隐藏定位器
+function hideLocator() {
+    const locator = document.getElementById('message-locator');
+    if (locator) {
+        locator.classList.remove('visible');
+    }
+
+    if (locatorHideTimer) {
+        clearTimeout(locatorHideTimer);
+        locatorHideTimer = null;
+    }
+}
+
+function scrollToMessage(index) {
+    const chatContainer = document.getElementById('chat-container');
+    const messages = chatContainer.querySelectorAll('.message');
+    const locator = document.getElementById('message-locator');
+
+    if (index >= 0 && index < messages.length) {
+        const targetMessage = messages[index];
+        currentMessageIndex = index;
+
+        // 如果定位器不存在，创建它
+        if (!locator) {
+            const newLocator = document.createElement('div');
+            newLocator.className = 'message-locator';
+            newLocator.id = 'message-locator';
+            document.body.appendChild(newLocator);
+            // 需要初始化所有圆点...
+            initLocatorDots(newLocator, messages);
+        }
+
+        // 只更新 active 类，不重建整个定位器
+        const dots = locator.querySelectorAll('.locator-dot');
+        dots.forEach((dot, i) => {
+            if (i === index) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
+
+        locator.classList.add('visible');
+
+        // 滚动到目标消息
+        targetMessage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// 辅助函数：初始化定位器圆点（只在首次或消息数量变化时调用）
+function initLocatorDots(locator, messages) {
+    locator.innerHTML = '';
+    messages.forEach((message, i) => {
+        const dot = document.createElement('button');
+        dot.className = 'locator-dot';
+        if (message.classList.contains('user-message')) {
+            dot.classList.add('user');
+        } else {
+            dot.classList.add('assistant');
+        }
+        dot.onclick = function(e) {
+            e.stopPropagation();
+            scrollToMessage(i);
+        };
+        locator.appendChild(dot);
+    });
+}
+
+function updateLocatorHighlight(activeIndex) {
+    const locator = document.getElementById('message-locator');
+    if (!locator) return;
+
+    const dots = locator.querySelectorAll('.locator-dot');
+    dots.forEach((dot, index) => {
+        if (index === activeIndex) {
+            dot.classList.add('active');
+        } else {
+            dot.classList.remove('active');
+        }
+    });
+}
+
+// 注册消息滚动监听
+document.addEventListener('DOMContentLoaded', function() {
+    // 只初始化定位器组件
+    const chatContainer = document.getElementById('chat-container');
+
+    // 初始化滚动进度条（如果尚未初始化）
+    if (!document.getElementById('scroll-progress-container')) {
+        initScrollProgressBar();
+    }
+
+    // 初始化消息定位器（如果尚未初始化）
+    if (!document.getElementById('message-locator')) {
+        initMessageLocator();
+    }
+
+    console.log('Components initialized');
+});
+
+// 简化版：计算当前可见消息索引
+function updateCurrentMessageIndex() {
+    const chatContainer = document.getElementById('chat-container');
+    const messages = chatContainer.querySelectorAll('.message');
+
+    if (messages.length === 0) return;
+
+    const scrollTop = chatContainer.scrollTop;
+    const containerHeight = chatContainer.clientHeight;
+    const viewportCenter = scrollTop + containerHeight / 2;
+
+    let minDistance = Infinity;
+    let bestIndex = 0;
+
+    messages.forEach((message, index) => {
+        const msgTop = message.offsetTop;
+        const msgBottom = msgTop + message.offsetHeight;
+        const msgCenter = (msgTop + msgBottom) / 2;
+        const distance = Math.abs(msgCenter - viewportCenter);
+
+        if (distance < minDistance) {
+            minDistance = distance;
+            bestIndex = index;
+        }
+    });
+
+    currentMessageIndex = bestIndex;
+}
+
+// ========== 磨砂状态栏高度检测 ==========
+// 记录首次检测到的真实状态栏高度（不受键盘影响）
+var _baselineStatusBarHeight = 0;
+
+// 可被 Android 端通过 evaluateJavascript 或 JavascriptInterface 调用
+function updateStatusBarHeight(px) {
+    var height = 0;
+    if (typeof px === 'number' && px > 0) {
+        height = px;
+    } else if (window.visualViewport && window.visualViewport.offsetTop > 0) {
+        height = window.visualViewport.offsetTop;
+    } else {
+        // fallback: 尝试通过 safe-area-inset-top 获取
+        var dummy = document.createElement('div');
+        dummy.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;padding-top:env(safe-area-inset-top, 0px);pointer-events:none;opacity:0';
+        document.body.appendChild(dummy);
+        height = parseInt(getComputedStyle(dummy).paddingTop) || 0;
+        dummy.remove();
+    }
+    height = Math.max(height, 0);
+    // 记录首次基线高度
+    if (_baselineStatusBarHeight === 0 && height > 0) {
+        _baselineStatusBarHeight = height;
+    }
+    document.documentElement.style.setProperty('--status-bar-height', height + 'px');
+}
+
+// 监听 visualViewport 变化（包括键盘弹起/收起和方向旋转）
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', function() {
+        // 键盘弹出时 visualViewport.offsetTop 可能变化，
+        // 用基线高度确保键盘收回后状态栏高度正确恢复
+        var h = _baselineStatusBarHeight;
+        if (h === 0) {
+            // 基线还没建立，直接取当前值
+            updateStatusBarHeight();
+        } else {
+            document.documentElement.style.setProperty('--status-bar-height', h + 'px');
+        }
+    });
+}
+
+// 初始化入口 - 页面加载完成后延迟初始化
+window.addEventListener('load', function() {
+    console.log('Window load event fired');
+
+    // 检测状态栏高度并设置 CSS 变量
+    updateStatusBarHeight();
+
+    // 多次尝试初始化，确保 WebView 和 DOM 完全加载
+    let initAttempts = 0;
+    const maxAttempts = 10;
+
+    function tryInit() {
+        initAttempts++;
+        console.log('Init attempt:', initAttempts);
+
+        const chatContainer = document.getElementById('chat-container');
+        if (!chatContainer) {
+            if (initAttempts < maxAttempts) {
+                setTimeout(tryInit, 200);
+            } else {
+                console.error('Failed to find chat-container after', maxAttempts, 'attempts');
+            }
+            return;
+        }
+
+        console.log('Found chat-container, initializing components');
+
+        // 初始化滚动进度条（如果尚未初始化）
+        if (!document.getElementById('scroll-progress-container')) {
+            initScrollProgressBar();
+        }
+
+        // 初始化消息定位器（如果尚未初始化且设置为显示）
+        var showLocator = localStorage.getItem('chat_show_locator');
+        if (!document.getElementById('message-locator') && showLocator !== 'false') {
+            initMessageLocator();
+        }
+
+        // 应用回弹设置
+        applyBounceSetting(localStorage.getItem('chat_allow_bounce') !== 'false');
+
+        console.log('Components initialized');
+    }
+
+    // 首次尝试
+    setTimeout(tryInit, 100);
+});
+
+// 回弹效果控制
+function applyBounceSetting(allow) {
+    var container = document.getElementById('chat-container');
+    if (!container) return;
+    if (allow) {
+        container.style.overscrollBehavior = 'auto';
+    } else {
+        container.style.overscrollBehavior = 'contain';
+    }
+}
+
+// 磨砂模式控制：true=实时刷新，false=滚动停止后刷新
+var _frostScrollTimer = null;
+
+// 需要控制 backdrop-filter 的元素列表
+function _getFrostElements() {
+    var els = [];
+    var container = document.getElementById('input-container');
+    if (container) els.push(container);
+    var fab = document.getElementById('menu-fab');
+    if (fab) els.push(fab);
+    var panel = document.getElementById('menu-panel');
+    if (panel) els.push(panel);
+    return els;
+}
+
+function _setFrostFilter(els, val) {
+    for (var i = 0; i < els.length; i++) {
+        els[i].style.backdropFilter = val;
+        els[i].style.webkitBackdropFilter = val;
+    }
+}
+
+function _setFrostTransition(els, val) {
+    for (var i = 0; i < els.length; i++) {
+        els[i].style.transition = val;
+    }
+}
+
+function _getInputBgColor() {
+    var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (isDark) {
+        // 暗色主题使用默认暗色背景，忽略用户颜色选择
+        return 'rgba(30, 30, 30, 0.96)';
+    }
+    var hex = localStorage.getItem('chat_input_bg_color') || '#15ae67';
+    var r = parseInt(hex.substring(1,3), 16);
+    var g = parseInt(hex.substring(3,5), 16);
+    var b = parseInt(hex.substring(5,7), 16);
+    // 0.96 透明度对应非实时模式的静态背景
+    return 'rgba(' + r + ',' + g + ',' + b + ',0.96)';
+}
+
+function applyFrostMode(realtime) {
+    var els = _getFrostElements();
+    if (els.length === 0) return;
+    var container = els[0];
+    if (realtime) {
+        // 实时：恢复 backdrop-filter，用 CSS 定义的磨砂背景
+        _setFrostFilter(els, '');
+        _setFrostTransition(els, '');
+        container.style.background = '';
+    } else {
+        // 非实时：去掉 backdrop-filter，背景用不透明色 + 噪点纹理
+        _setFrostFilter(els, 'none');
+        _setFrostTransition(els, '');
+        // 把背景设成不透明，::before 噪点层保持不变即可
+        container.style.background = _getInputBgColor();
+    }
+}
+
+// 非实时模式：滚动时保持静态效果，不需要额外操作
+function onChatScrollForFrost() {
+    // 什么都不做——非实时模式下 backdrop-filter 已经是 none，
+    // 背景色 + ::before 噪点纹理由 CSS 管理，本身就不动
+}
+
+// 设置字体大小
+function setFontSize(fontSize) {
+    localStorage.setItem('chat_font_size', fontSize);
+    document.documentElement.style.setProperty('--font-size', fontSize + 'px');
+}
+
+// 页面加载时应用保存的字体大小
+(function() {
+    var saved = localStorage.getItem('chat_font_size');
+    if (saved) {
+        document.documentElement.style.setProperty('--font-size', saved + 'px');
+    }
+})();
+
+// 预设颜色列表
+var presetColors = ['#ffffff','#15ae67','#006994','#5387ED','#9C27B0','#E91E63','#FF5722','#FF9800','#795548','#607D8B','#4CAF50','#2196F3','#3F51B5','#673AB7','#F44336','#FFEB3B','#009688'];
+
+// 创建预设色板
+function createColorPresets(inputEl_or_null, onSelect, selectedColor) {
+    var container = document.createElement('div');
+    container.className = 'page-settings-color-presets';
+    var sel = selectedColor || (inputEl_or_null && inputEl_or_null.value) || '#15ae67';
+    presetColors.forEach(function(c) {
+        var swatch = document.createElement('div');
+        swatch.className = 'page-settings-color-swatch';
+        swatch.style.background = c;
+        if (c === sel) {
+            swatch.classList.add('selected');
+        }
+        swatch.onclick = function() {
+            container.querySelectorAll('.page-settings-color-swatch').forEach(function(s) { s.classList.remove('selected'); });
+            swatch.classList.add('selected');
+            if (onSelect) onSelect(c);
+        };
+        container.appendChild(swatch);
+    });
+    // 自定义颜色块
+    var customSwatch = document.createElement('div');
+    customSwatch.className = 'page-settings-color-swatch page-settings-color-custom';
+    customSwatch.textContent = '+';
+    customSwatch.onclick = function() {
+        var input = document.createElement('input');
+        input.type = 'color';
+        input.value = sel;
+        input.style.cssText = 'position:fixed;top:0;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none';
+        document.body.appendChild(input);
+        input.addEventListener('input', function() {
+            var hex = this.value;
+            container.querySelectorAll('.page-settings-color-swatch').forEach(function(s) { s.classList.remove('selected'); });
+            customSwatch.style.background = hex;
+            customSwatch.classList.add('selected');
+            customSwatch.style.color = '#fff';
+            customSwatch.textContent = '';
+            if (onSelect) onSelect(hex);
+        });
+        input.addEventListener('blur', function() {
+            this.remove();
+        });
+        // 延迟触发点击以确保 input 在 DOM 中
+        setTimeout(function() { input.click(); }, 10);
+    };
+    container.appendChild(customSwatch);
+    return container;
+}
+
+// 将 hex 颜色应用到 input-container
+function applyInputBgColor(hex) {
+    var r = parseInt(hex.substring(1,3), 16);
+    var g = parseInt(hex.substring(3,5), 16);
+    var b = parseInt(hex.substring(5,7), 16);
+    document.getElementById('input-container').style.background = 'rgba(' + r + ',' + g + ',' + b + ',0.18)';
+}
+
+// 将 hex 颜色应用到进度条和定位器
+function applyProgressColor(hex) {
+    var r = parseInt(hex.substring(1,3), 16);
+    var g = parseInt(hex.substring(3,5), 16);
+    var b = parseInt(hex.substring(5,7), 16);
+    document.getElementById('scroll-progress-bar').style.background = 'linear-gradient(90deg, rgba(' + r + ',' + g + ',' + b + ',0.6), rgb(' + r + ',' + g + ',' + b + '))';
+    // 同步更新定位器颜色
+    document.getElementById('progress-color-style') || (function() {
+        var style = document.createElement('style');
+        style.id = 'progress-color-style';
+        document.head.appendChild(style);
+    })();
+    // 反色：255 - 原色值
+    var ri = 255 - r, gi = 255 - g, bi = 255 - b;
+    document.getElementById('progress-color-style').textContent =
+        '.locator-dot:not(.locator-bottom) { background: rgba(' + r + ',' + g + ',' + b + ',0.35) !important; }' +
+        '.locator-dot:not(.locator-bottom):hover { background: rgba(' + r + ',' + g + ',' + b + ',0.7) !important; }' +
+        '.locator-dot.user { background: rgba(' + ri + ',' + gi + ',' + bi + ',0.5) !important; }' +
+        '.locator-dot.assistant { background: rgba(' + r + ',' + g + ',' + b + ',0.35) !important; }' +
+        '.locator-dot.active:not(.locator-bottom) { transform: scale(1.6); }';
+}
+
+// 初始化设置按钮
+function initPageSettingsButton() {
+    // 页面字体初始化
+    var saved = localStorage.getItem('chat_font_size');
+    if (saved) {
+        document.documentElement.style.setProperty('--font-size', saved + 'px');
+    }
+    // 恢复输入框背景颜色
+    var savedColor = localStorage.getItem('chat_input_bg_color');
+    if (savedColor) {
+        applyInputBgColor(savedColor);
+    }
+    // 恢复进度条颜色
+    var savedProgress = localStorage.getItem('chat_progress_color');
+    if (savedProgress) {
+        applyProgressColor(savedProgress);
+    }
+    // 恢复磨砂模式
+    var frostRealtime = localStorage.getItem('chat_frost_realtime') !== 'false';
+    applyFrostMode(frostRealtime);
+
+    // 恢复 prompt 显隐状态
+    var promptsHidden = localStorage.getItem('chat_prompts_hidden') === 'true';
+    var pc = document.getElementById('prompt-container');
+    var toggleBtn = document.getElementById('toggle-prompts-btn');
+    if (promptsHidden && pc && toggleBtn) {
+        pc.style.display = 'none';
+        toggleBtn.style.opacity = '0.4';
+        var msgInput = document.getElementById('message-input');
+        if (msgInput) {
+            msgInput.style.marginTop = '8px';
+        }
+    }
+}
+
+// 设置对话框函数
+function showPageSettingsDialog() {
+    try {
+        var fontSize = localStorage.getItem('chat_font_size') || 16;
+        var showLocator = localStorage.getItem('chat_show_locator') !== 'false';  // 默认显示
+
+        var overlay = document.createElement('div');
+        overlay.className = 'page-settings-overlay';
+        overlay.onclick = function(e) {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        };
+
+        var dialog = document.createElement('div');
+        dialog.className = 'page-settings';
+        dialog.onclick = function(e) {
+            e.stopPropagation();
+        };
+
+        var title = document.createElement('h3');
+        title.className = 'page-settings-title';
+        title.textContent = '设置';
+
+        // 字体大小设置
+        var label = document.createElement('div');
+        label.className = 'page-settings-label';
+        label.textContent = '字体大小: ' + fontSize + 'sp';
+
+        var slider = document.createElement('input');
+        slider.type = 'range';
+        slider.min = '12';
+        slider.max = '24';
+        slider.value = fontSize;
+        slider.step = '2';
+        slider.className = 'page-settings-slider';
+
+        slider.oninput = function() {
+            var size = parseInt(this.value);
+            label.textContent = '字体大小: ' + size + 'sp';
+            // 实时修改字体
+            document.documentElement.style.setProperty('--font-size', size + 'px');
+        };
+
+        // 定位器复选框
+        var locatorLabel = document.createElement('label');
+        locatorLabel.className = 'page-settings-checkbox-label';
+
+        var locatorCheckbox = document.createElement('input');
+        locatorCheckbox.type = 'checkbox';
+        locatorCheckbox.checked = showLocator;
+        locatorCheckbox.className = 'page-settings-checkbox';
+
+        var locatorText = document.createElement('span');
+        locatorText.textContent = '启动定位器';
+
+        locatorLabel.appendChild(locatorCheckbox);
+        locatorLabel.appendChild(locatorText);
+
+        // 回弹效果复选框
+        var bounceLabel = document.createElement('label');
+        bounceLabel.className = 'page-settings-checkbox-label';
+
+        var bounceCheckbox = document.createElement('input');
+        bounceCheckbox.type = 'checkbox';
+        bounceCheckbox.checked = localStorage.getItem('chat_allow_bounce') !== 'false';
+        bounceCheckbox.className = 'page-settings-checkbox';
+
+        var bounceText = document.createElement('span');
+        bounceText.textContent = '页面回弹';
+
+        bounceLabel.appendChild(bounceCheckbox);
+        bounceLabel.appendChild(bounceText);
+
+        // 实时磨砂复选框
+        var frostLabel = document.createElement('label');
+        frostLabel.className = 'page-settings-checkbox-label';
+
+        var frostCheckbox = document.createElement('input');
+        frostCheckbox.type = 'checkbox';
+        frostCheckbox.checked = localStorage.getItem('chat_frost_realtime') !== 'false';
+        frostCheckbox.className = 'page-settings-checkbox';
+
+        var frostText = document.createElement('span');
+        frostText.textContent = '实时磨砂';
+
+        frostLabel.appendChild(frostCheckbox);
+        frostLabel.appendChild(frostText);
+
+        // 输入框背景颜色选择
+        var colorRow = document.createElement('div');
+        colorRow.className = 'page-settings-color-row';
+
+        var colorLabel = document.createElement('label');
+        colorLabel.textContent = '输入框背景';
+        colorLabel.htmlFor = 'input-bg-color';
+
+        var savedColor = localStorage.getItem('chat_input_bg_color') || '#15ae67';
+
+        colorRow.appendChild(colorLabel);
+        colorRow.appendChild(createColorPresets(null, function(hex) {
+            applyInputBgColor(hex);
+            localStorage.setItem('chat_input_bg_color', hex);
+        }, savedColor));
+
+        // 进度条颜色选择
+        var progressRow = document.createElement('div');
+        progressRow.className = 'page-settings-color-row';
+
+        var progressLabel = document.createElement('label');
+        progressLabel.textContent = '进度条颜色';
+
+        var savedProgress = localStorage.getItem('chat_progress_color') || '#006994';
+
+        progressRow.appendChild(progressLabel);
+        progressRow.appendChild(createColorPresets(null, function(hex) {
+            applyProgressColor(hex);
+            localStorage.setItem('chat_progress_color', hex);
+        }, savedProgress));
+
+        var btnContainer = document.createElement('div');
+        btnContainer.className = 'page-settings-buttons';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.className = 'page-settings-btn';
+        cancelBtn.textContent = '取消';
+        cancelBtn.onclick = function() {
+            localStorage.setItem('chat_font_size', fontSize);
+            document.documentElement.style.setProperty('--font-size', fontSize + 'px');
+            // 恢复回弹设置
+            var origBounce = localStorage.getItem('chat_allow_bounce') !== 'false';
+            applyBounceSetting(origBounce);
+            overlay.remove();
+        };
+
+        var okBtn = document.createElement('button');
+        okBtn.className = 'page-settings-btn page-settings-btn-primary';
+        okBtn.textContent = '确定';
+        okBtn.onclick = function() {
+            var size = parseInt(slider.value);
+            localStorage.setItem('chat_font_size', size);
+            document.documentElement.style.setProperty('--font-size', size + 'px');
+
+            // 保存定位器设置
+            var showLocator = locatorCheckbox.checked;
+            localStorage.setItem('chat_show_locator', showLocator);
+
+            // 保存回弹设置
+            var allowBounce = bounceCheckbox.checked;
+            localStorage.setItem('chat_allow_bounce', allowBounce);
+            applyBounceSetting(allowBounce);
+
+            // 保存实时磨砂设置
+            var realtime = frostCheckbox.checked;
+            localStorage.setItem('chat_frost_realtime', realtime);
+            applyFrostMode(realtime);
+
+            // 根据设置显示或隐藏定位器
+            var locator = document.getElementById('message-locator');
+            if (showLocator) {
+                if (!locator) {
+                    // 定位器不存在，创建新的
+                    initMessageLocator();
+                } else {
+                    // 定位器存在，先移除再重建，避免样式问题
+                    locator.remove();
+                    initMessageLocator();
+                }
+            } else {
+                if (locator) {
+                    locator.remove();
+                }
+            }
+
+            overlay.remove();
+        };
+
+        btnContainer.appendChild(cancelBtn);
+        btnContainer.appendChild(okBtn);
+        dialog.appendChild(title);
+        dialog.appendChild(label);
+        dialog.appendChild(slider);
+        dialog.appendChild(locatorLabel);
+        dialog.appendChild(bounceLabel);
+        dialog.appendChild(frostLabel);
+        dialog.appendChild(colorRow);
+        dialog.appendChild(progressRow);
+        dialog.appendChild(btnContainer);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+    } catch (err) {
+        alert('弹窗出错: ' + err.message);
+    }
+}
+
+// 显示本地设置对话框（当 ChatAndroid 不可用时）
+function showLocalPageSettingsDialog() {
+    // 获取当前字体大小设置
+    let currentFontSize = localStorage.getItem('chat_font_size') || 16;
+
+    // 创建对话框overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'page-settings-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 20000;
+    `;
+
+    // 创建对话框容器
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+        background: var(--color-bg, #ffffff);
+        border-radius: 12px;
+        padding: 20px;
+        width: 80%;
+        max-width: 300px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    `;
+
+    // 标题
+    const title = document.createElement('h3');
+    title.textContent = '设置';
+    title.style.cssText = `
+        margin: 0 0 16px 0;
+        text-align: center;
+        color: var(--color-text, #24292e);
+    `;
+
+    // 字体大小标签
+    const fontSizeLabel = document.createElement('div');
+    fontSizeLabel.id = 'font-size-label';
+    fontSizeLabel.textContent = '字体大小: ' + currentFontSize + 'sp';
+    fontSizeLabel.style.cssText = `
+        margin-bottom: 8px;
+        color: var(--color-text, #24292e);
+    `;
+
+    // 字体大小滑块
+    const fontSizeSlider = document.createElement('input');
+    fontSizeSlider.type = 'range';
+    fontSizeSlider.min = '12';
+    fontSizeSlider.max = '24';
+    fontSizeSlider.value = currentFontSize;
+    fontSizeSlider.step = '2';
+    fontSizeSlider.style.cssText = `
+        width: 100%;
+        margin-bottom: 16px;
+    `;
+
+    // 滑块变化时更新标签
+    fontSizeSlider.addEventListener('input', function() {
+        fontSizeLabel.textContent = '字体大小: ' + this.value + 'sp';
+    });
+
+    // 按钮容器
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    `;
+
+    // 取消按钮
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '取消';
+    cancelBtn.style.cssText = `
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        background: #e0e0e0;
+        cursor: pointer;
+    `;
+    cancelBtn.addEventListener('click', function() {
+        overlay.remove();
+    });
+
+    // 确定按钮
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = '确定';
+    confirmBtn.style.cssText = `
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        background: #5387ED;
+        color: white;
+        cursor: pointer;
+    `;
+    confirmBtn.addEventListener('click', function() {
+        var fontSize = parseInt(fontSizeSlider.value);
+        localStorage.setItem('chat_font_size', fontSize);
+        applyFontSize(fontSize);
+        showToast('字体已设置为 ' + fontSize + 'sp');
+        overlay.remove();
+    });
+
+    // 组装对话框
+    buttonContainer.appendChild(cancelBtn);
+    buttonContainer.appendChild(confirmBtn);
+    dialog.appendChild(title);
+    dialog.appendChild(fontSizeLabel);
+    dialog.appendChild(fontSizeSlider);
+    dialog.appendChild(buttonContainer);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    // 点击背景关闭
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            overlay.remove();
+        }
+    });
+}
+
+// 页面加载后应用字体设置
+document.addEventListener('DOMContentLoaded', function() {
+    initPageSettingsButton();
+});

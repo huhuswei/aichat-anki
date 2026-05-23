@@ -19,7 +19,8 @@
 </head>
 <body>
 <div class="card">
-    <div class="markdown-body" id="question">{{Question}}</div>
+    <div id="question-raw" style="display:none;">{{Question}}</div>
+    <div class="markdown-body" id="question"></div>
     <hr class="answer-divider">
     <div class="markdown-body" id="answer"></div>
 
@@ -44,10 +45,143 @@
 <!--"></script>-->
 
 <script>
+    /**
+     * 判断字符串是否为 JSON 格式
+     */
+    function isJSON(str) {
+        if (typeof str !== 'string') return false;
+        str = str.trim();
+        if (!((str.startsWith('{') && str.endsWith('}')) ||
+              (str.startsWith('[') && str.endsWith(']')))) {
+            return false;
+        }
+        try {
+            JSON.parse(str);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+
+    /**
+     * 解码 JSON 格式的消息内容（含 _text 和 _files）
+     * 如果非 JSON 则返回原始字符串
+     */
+    function decodeContent(raw) {
+        if (!isJSON(raw)) return raw;
+        try {
+            var data = JSON.parse(raw);
+            var result = '';
+
+            // 处理 _text 字段
+            if (data._text) {
+                result += data._text;
+            }
+
+            // 处理 _files 字段
+            if (data._files && data._files.length > 0) {
+                for (var i = 0; i < data._files.length; i++) {
+                    var f = data._files[i];
+                    var isTextFile = f.type === 'text/plain' || isTextFileName(f.name);
+                    result += '\n';
+
+                    if (f.type && f.type.startsWith('image/')) {
+                        result += '![' + f.name + '](' + f.data + ')\n\n';
+                    } else if (isTextFile) {
+                        // 文本类文件：解码 base64 并用 <details> 折叠显示，内部用 markdown 渲染
+                        try {
+                            var base64Data = f.data.split(',')[1];
+                            var txt = decodeURIComponent(escape(atob(base64Data)));
+                            // 根据文件扩展名决定代码块语言
+                            var ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
+                            var lang = getCodeLang(ext);
+                            if (lang) {
+                                // 代码文件：用代码块语法包裹，让 marked 解析为带高亮的 <pre><code>
+                                result += '<details>\n';
+                                result += '<summary>📄 ' + f.name + '</summary>\n\n';
+                                result += '```' + lang + '\n';
+                                result += txt + '\n';
+                                result += '```\n\n';
+                                result += '</details>\n';
+                            } else {
+                                // 非代码类文本文件：直接用纯文本显示
+                                result += '<details>\n';
+                                result += '<summary>📄 ' + f.name + '</summary>\n\n';
+                                result += txt + '\n\n';
+                                result += '</details>\n';
+                            }
+                        } catch(e) {
+                            result += '[下载 ' + f.name + '](' + f.data + ')\n\n';
+                        }
+                    } else {
+                        result += '[下载 ' + f.name + '](' + f.data + ')\n\n';
+                    }
+                }
+            }
+
+            return result || '(空内容)';
+        } catch(e) {
+            return raw;
+        }
+    }
+
+    function isTextFileName(name) {
+        if (!name) return false;
+        var lower = name.toLowerCase();
+        return lower.endsWith('.txt') || lower.endsWith('.md') || lower.endsWith('.markdown') ||
+            lower.endsWith('.json') || lower.endsWith('.xml') || lower.endsWith('.yaml') ||
+            lower.endsWith('.yml') || lower.endsWith('.csv') || lower.endsWith('.log') ||
+            lower.endsWith('.js') || lower.endsWith('.ts') || lower.endsWith('.jsx') ||
+            lower.endsWith('.tsx') || lower.endsWith('.py') || lower.endsWith('.java') ||
+            lower.endsWith('.c') || lower.endsWith('.cpp') || lower.endsWith('.h') ||
+            lower.endsWith('.hpp') || lower.endsWith('.cs') || lower.endsWith('.go') ||
+            lower.endsWith('.rs') || lower.endsWith('.rb') || lower.endsWith('.php') ||
+            lower.endsWith('.swift') || lower.endsWith('.kt') || lower.endsWith('.kts') ||
+            lower.endsWith('.scala') || lower.endsWith('.sh') || lower.endsWith('.bash') ||
+            lower.endsWith('.zsh') || lower.endsWith('.ps1') || lower.endsWith('.bat') ||
+            lower.endsWith('.cmd') || lower.endsWith('.sql') || lower.endsWith('.r') ||
+            lower.endsWith('.lua') || lower.endsWith('.pl') || lower.endsWith('.pm') ||
+            lower.endsWith('.dart') || lower.endsWith('.groovy') || lower.endsWith('.gradle') ||
+            lower.endsWith('.css') || lower.endsWith('.scss') || lower.endsWith('.less') ||
+            lower.endsWith('.html') || lower.endsWith('.htm') || lower.endsWith('.xhtml') ||
+            lower.endsWith('.properties') || lower.endsWith('.ini') || lower.endsWith('.cfg') ||
+            lower.endsWith('.conf') || lower.endsWith('.toml') || lower.endsWith('.env');
+    }
+
+    /**
+     * 根据文件扩展名返回代码块语言标识
+     */
+    function getCodeLang(ext) {
+        var map = {
+            '.js': 'javascript', '.ts': 'typescript', '.jsx': 'jsx', '.tsx': 'tsx',
+            '.py': 'python', '.java': 'java', '.c': 'c', '.cpp': 'cpp',
+            '.h': 'c', '.hpp': 'cpp', '.cs': 'csharp', '.go': 'go',
+            '.rs': 'rust', '.rb': 'ruby', '.php': 'php',
+            '.swift': 'swift', '.kt': 'kotlin', '.kts': 'kotlin',
+            '.scala': 'scala', '.sh': 'bash', '.bash': 'bash',
+            '.zsh': 'bash', '.ps1': 'powershell', '.bat': 'bat',
+            '.cmd': 'batch', '.sql': 'sql', '.r': 'r',
+            '.lua': 'lua', '.pl': 'perl', '.pm': 'perl',
+            '.dart': 'dart', '.groovy': 'groovy', '.gradle': 'groovy',
+            '.css': 'css', '.scss': 'scss', '.less': 'less',
+            '.html': 'html', '.htm': 'html', '.xhtml': 'html',
+            '.json': 'json', '.xml': 'xml', '.yaml': 'yaml',
+            '.yml': 'yaml', '.toml': 'toml', '.ini': 'ini',
+            '.cfg': 'ini', '.conf': 'ini', '.properties': 'properties',
+            '.md': 'markdown', '.markdown': 'markdown', '.csv': 'csv',
+            '.txt': 'text', '.log': 'text', '.env': 'dotenv'
+        };
+        return map[ext] || '';
+    }
+
     // 安全初始化函数
       const initApp = () => {
       try {
         document.getElementById('loading').style.display = 'block';
+
+        // ===== 解码 JSON 内容（正面） =====
+        var rawQuestion = document.getElementById('question-raw').innerHTML;
+        document.getElementById('question').innerHTML = decodeContent(rawQuestion);
 
         // ===== 主题检测 =====
         const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -214,9 +348,11 @@
 </head>
 <body>
 <div class="card">
-    <div class="markdown-body" id="question">{{Question}}</div>
+    <div id="question-raw" style="display:none;">{{Question}}</div>
+    <div class="markdown-body" id="question"></div>
     <hr class="answer-divider">
-    <div class="markdown-body" id="answer">{{Answer}}</div>
+    <div id="answer-raw" style="display:none;">{{Answer}}</div>
+    <div class="markdown-body" id="answer"></div>
 
     <!-- 加载状态 -->
     <div id="loading" style="display:none;">
@@ -239,10 +375,135 @@
 <!--"></script>-->
 
 <script>
+    /**
+     * 判断字符串是否为 JSON 格式
+     */
+    function isJSON(str) {
+        if (typeof str !== 'string') return false;
+        str = str.trim();
+        if (!((str.startsWith('{') && str.endsWith('}')) ||
+              (str.startsWith('[') && str.endsWith(']')))) {
+            return false;
+        }
+        try {
+            JSON.parse(str);
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+
+    /**
+     * 解码 JSON 格式的消息内容（含 _text 和 _files）
+     */
+    function decodeContent(raw) {
+        if (!isJSON(raw)) return raw;
+        try {
+            var data = JSON.parse(raw);
+            var result = '';
+            if (data._text) {
+                result += data._text;
+            }
+            if (data._files && data._files.length > 0) {
+                for (var i = 0; i < data._files.length; i++) {
+                    var f = data._files[i];
+                    var isTextFile = f.type === 'text/plain' || isTextFileName(f.name);
+                    result += '\n';
+                    if (f.type && f.type.startsWith('image/')) {
+                        result += '![' + f.name + '](' + f.data + ')\n\n';
+                    } else if (isTextFile) {
+                        try {
+                            var base64Data = f.data.split(',')[1];
+                            var txt = decodeURIComponent(escape(atob(base64Data)));
+                            // 根据文件扩展名决定代码块语言
+                            var ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
+                            var lang = getCodeLang(ext);
+                            if (lang) {
+                                result += '<details>\n';
+                                result += '<summary>📄 ' + f.name + '</summary>\n\n';
+                                result += '```' + lang + '\n';
+                                result += txt + '\n';
+                                result += '```\n\n';
+                                result += '</details>\n';
+                            } else {
+                                result += '<details>\n';
+                                result += '<summary>📄 ' + f.name + '</summary>\n\n';
+                                result += txt + '\n\n';
+                                result += '</details>\n';
+                            }
+                        } catch(e) {
+                            result += '[下载 ' + f.name + '](' + f.data + ')\n\n';
+                        }
+                    } else {
+                        result += '[下载 ' + f.name + '](' + f.data + ')\n\n';
+                    }
+                }
+            }
+            return result || '(空内容)';
+        } catch(e) {
+            return raw;
+        }
+    }
+
+    function isTextFileName(name) {
+        if (!name) return false;
+        var lower = name.toLowerCase();
+        return lower.endsWith('.txt') || lower.endsWith('.md') || lower.endsWith('.markdown') ||
+            lower.endsWith('.json') || lower.endsWith('.xml') || lower.endsWith('.yaml') ||
+            lower.endsWith('.yml') || lower.endsWith('.csv') || lower.endsWith('.log') ||
+            lower.endsWith('.js') || lower.endsWith('.ts') || lower.endsWith('.jsx') ||
+            lower.endsWith('.tsx') || lower.endsWith('.py') || lower.endsWith('.java') ||
+            lower.endsWith('.c') || lower.endsWith('.cpp') || lower.endsWith('.h') ||
+            lower.endsWith('.hpp') || lower.endsWith('.cs') || lower.endsWith('.go') ||
+            lower.endsWith('.rs') || lower.endsWith('.rb') || lower.endsWith('.php') ||
+            lower.endsWith('.swift') || lower.endsWith('.kt') || lower.endsWith('.kts') ||
+            lower.endsWith('.scala') || lower.endsWith('.sh') || lower.endsWith('.bash') ||
+            lower.endsWith('.zsh') || lower.endsWith('.ps1') || lower.endsWith('.bat') ||
+            lower.endsWith('.cmd') || lower.endsWith('.sql') || lower.endsWith('.r') ||
+            lower.endsWith('.lua') || lower.endsWith('.pl') || lower.endsWith('.pm') ||
+            lower.endsWith('.dart') || lower.endsWith('.groovy') || lower.endsWith('.gradle') ||
+            lower.endsWith('.css') || lower.endsWith('.scss') || lower.endsWith('.less') ||
+            lower.endsWith('.html') || lower.endsWith('.htm') || lower.endsWith('.xhtml') ||
+            lower.endsWith('.properties') || lower.endsWith('.ini') || lower.endsWith('.cfg') ||
+            lower.endsWith('.conf') || lower.endsWith('.toml') || lower.endsWith('.env');
+    }
+
+    /**
+     * 根据文件扩展名返回代码块语言标识
+     */
+    function getCodeLang(ext) {
+        var map = {
+            '.js': 'javascript', '.ts': 'typescript', '.jsx': 'jsx', '.tsx': 'tsx',
+            '.py': 'python', '.java': 'java', '.c': 'c', '.cpp': 'cpp',
+            '.h': 'c', '.hpp': 'cpp', '.cs': 'csharp', '.go': 'go',
+            '.rs': 'rust', '.rb': 'ruby', '.php': 'php',
+            '.swift': 'swift', '.kt': 'kotlin', '.kts': 'kotlin',
+            '.scala': 'scala', '.sh': 'bash', '.bash': 'bash',
+            '.zsh': 'bash', '.ps1': 'powershell', '.bat': 'bat',
+            '.cmd': 'batch', '.sql': 'sql', '.r': 'r',
+            '.lua': 'lua', '.pl': 'perl', '.pm': 'perl',
+            '.dart': 'dart', '.groovy': 'groovy', '.gradle': 'groovy',
+            '.css': 'css', '.scss': 'scss', '.less': 'less',
+            '.html': 'html', '.htm': 'html', '.xhtml': 'html',
+            '.json': 'json', '.xml': 'xml', '.yaml': 'yaml',
+            '.yml': 'yaml', '.toml': 'toml', '.ini': 'ini',
+            '.cfg': 'ini', '.conf': 'ini', '.properties': 'properties',
+            '.md': 'markdown', '.markdown': 'markdown', '.csv': 'csv',
+            '.txt': 'text', '.log': 'text', '.env': 'dotenv'
+        };
+        return map[ext] || '';
+    }
+
     // 安全初始化函数
       const initApp = () => {
       try {
         document.getElementById('loading').style.display = 'block';
+
+        // ===== 解码 JSON 内容 =====
+        var rawQuestion = document.getElementById('question-raw').innerHTML;
+        document.getElementById('question').innerHTML = decodeContent(rawQuestion);
+        var rawAnswer = document.getElementById('answer-raw').innerHTML;
+        document.getElementById('answer').innerHTML = decodeContent(rawAnswer);
 
         // ===== 主题检测 =====
         const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -385,7 +646,7 @@
       }
     }, true);
 
-// tools
+
     /**
  * 解析和替换文本中的音频标签
  * @param {string} text - 包含{()}标签的文本
@@ -665,12 +926,39 @@ if (typeof require !== 'undefined' && require.main === module) {
 </body>
 </html>
 @@@@@
+details {
+background: var(--color-code-bg);
+border-radius: 6px;
+padding: 0;
+margin: 1em 0;
+border: 1px solid var(--color-border);
+}
+
+details summary {
+padding: 0.6em 1em;
+cursor: pointer;
+font-weight: 500;
+color: var(--color-text);
+background: rgba(128,128,128,0.06);
+border-radius: 6px;
+user-select: none;
+}
+
+details[open] summary {
+border-bottom: 1px solid var(--color-border);
+border-radius: 6px 6px 0 0;
+}
+
+details > :not(summary) {
+padding: 0.5em 1em;
+}
+
 :root {
 --base-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 --code-font: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 --color-text: #24292e;
 --color-bg: #ffffff;
---color-code-bg: #f6f8fa;
+--color-code-bg: #ebedf0;
 --color-border: #e1e4e8;
 }
 
@@ -795,54 +1083,57 @@ font-size: 12px;
 }
 }
 
-.table-container {
-overflow-x: auto;
-margin: 25px 0;
-border-radius: 8px;
-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-table {
-width: 100%;
+/* 表格支持横向滚动 — 同 chat.css 一致 */
+.markdown-body table {
 border-collapse: collapse;
-min-width: 800px;
+width: 100%;
+max-width: 100%;
+overflow-x: auto;
+display: block;
+-webkit-overflow-scrolling: touch;
+margin: 1em 0;
 }
 
-th, td {
-padding: 15px 20px;
+.markdown-body table th,
+.markdown-body table td {
+padding: 8px 13px;
 text-align: left;
-border-bottom: 1px solid #e1e1e1;
+border: 1px solid var(--color-border, #dfe2e5);
 }
 
-th {
-background-color: #3498db;
-color: white;
+.markdown-body table tr:nth-child(even) {
+background-color: rgba(128, 128, 128, 0.04);
+}
+
+.markdown-body table thead th {
 font-weight: 600;
 position: sticky;
 top: 0;
+border-bottom-width: 2px;
 }
 
-tr:nth-child(even) {
-background-color: #f8f9fa;
+/* 滚动条样式 */
+.markdown-body table::-webkit-scrollbar {
+height: 6px;
 }
 
-tr:hover {
-background-color: #e8f4fc;
-transition: background-color 0.2s;
+.markdown-body table::-webkit-scrollbar-track {
+background: rgba(0, 0, 0, 0.05);
+border-radius: 3px;
 }
 
-.scroll-hint {
-display: flex;
-align-items: center;
-justify-content: center;
-color: #7f8c8d;
-font-size: 0.9rem;
-margin-top: 10px;
-opacity: 0.8;
+.markdown-body table::-webkit-scrollbar-thumb {
+background: rgba(0, 0, 0, 0.2);
+border-radius: 3px;
 }
 
-.scroll-hint svg {
-margin-right: 8px;
+@media (prefers-color-scheme: dark) {
+.markdown-body table::-webkit-scrollbar-track {
+background: rgba(255, 255, 255, 0.05);
+}
+.markdown-body table::-webkit-scrollbar-thumb {
+background: rgba(255, 255, 255, 0.2);
+}
 }
 
 .code-block {

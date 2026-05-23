@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="com.ichi2.anki.permission.READ_WRITE_DATABASE" />
     <uses-permission android:name="com.ichi2.anki.permission.RECEIVE_BROADCAST" />
@@ -12,6 +13,7 @@
     <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
     <!-- 添加查询包的权限，适配 Android 11+ -->
     <queries>
@@ -34,7 +36,7 @@
             android:exported="true"
             android:theme="@style/AppTheme"
             android:configChanges="uiMode|orientation|screenSize|screenLayout"
-            android:windowSoftInputMode="adjustResize|stateHidden">
+            android:windowSoftInputMode="adjustNothing|stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -78,13 +80,32 @@
             android:name="com.ss.aianki.SettingsActivity"
             android:label="设置"
             android:theme="@style/AppTheme"
+            android:configChanges="uiMode"
             android:parentActivityName="com.ss.aianki.MainActivity" />
 
         <activity
             android:name="com.ss.aianki.PromptActivity"
             android:label="提示词管理"
             android:theme="@style/AppTheme"
+            android:configChanges="uiMode"
             android:parentActivityName="com.ss.aianki.MainActivity" />
+        <activity
+            android:name="com.ss.aianki.FormulaActivity"
+            android:label="公式识别"
+            android:theme="@style/AppTheme"
+            android:configChanges="uiMode"
+            android:windowSoftInputMode="adjustNothing|stateHidden"
+            android:parentActivityName="com.ss.aianki.MainActivity" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest> 

@@ -151,8 +151,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             COLUMN_SESSION_ID,
             COLUMN_SESSION_TITLE,
             COLUMN_SESSION_TIMESTAMP,
-            "(SELECT COUNT(*) FROM " + TABLE_MESSAGES + 
-            " WHERE " + COLUMN_MESSAGE_SESSION_ID + "=" + TABLE_SESSIONS + "." + COLUMN_SESSION_ID + ") as message_count"
+            "(SELECT COUNT(*) FROM " + TABLE_MESSAGES +
+            " WHERE " + COLUMN_MESSAGE_SESSION_ID + "=" + TABLE_SESSIONS + "." + COLUMN_SESSION_ID +
+            " AND " + COLUMN_MESSAGE_ROLE + " != 'system') as message_count"
         };
         
         Cursor cursor = db.query(TABLE_SESSIONS, columns, null, null, null, null, 
@@ -182,6 +183,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "WITH MessageCounts AS (" +
                 "   SELECT session_id, COUNT(*) as msg_count " +
                 "   FROM " + TABLE_MESSAGES +
+                "   WHERE " + COLUMN_MESSAGE_ROLE + " != 'system'" +
                 "   GROUP BY session_id" +
                 ") " +
                 "SELECT DISTINCT s." + COLUMN_SESSION_ID + ", " +
@@ -282,7 +284,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     String content = messageCursor.getString(2);
                     Long ankiNoteId = messageCursor.isNull(3) ? null : messageCursor.getLong(3);
                     
-                    Message message = new Message(role, content, "", messageId);
+                    Message message = new Message(role, content, messageId);
                     message.setAnkiNoteId(ankiNoteId);
                     session.addMessage(message);
                 }

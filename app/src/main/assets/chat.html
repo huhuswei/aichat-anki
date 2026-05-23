@@ -15,8 +15,8 @@
     <script src="https://g.alicdn.com/code/lib/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 
     <!-- Highlight.js -->
-    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/monokai.css" id="hljs-light">
-    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/monokai-sublime.css" id="hljs-dark" disabled>
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/github.css" id="hljs-light">
+    <link rel="stylesheet" href="https://g.alicdn.com/code/lib/highlight.js/11.9.0/styles/github-dark.css" id="hljs-dark" disabled>
     <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/highlight.min.js"></script>
     <!-- 添加常用语言支持 -->
     <script src="https://g.alicdn.com/code/lib/highlight.js/11.8.0/languages/java.min.js"></script>
@@ -34,8 +34,34 @@
     </style>
 </head>
 <body>
+    <!-- 右上角浮动菜单按钮 -->
+    <div id="menu-fab"><span class="menu-bar"></span></div>
+    <div id="menu-panel">
+        <button id="menu-server-config">服务器设置</button>
+        <button id="menu-prompts">提示词管理</button>
+        <button id="menu-update-template">更新Anki模版</button>
+        <button id="menu-theme">切换主题</button>
+        <button id="menu-page-settings">页面设置</button>
+    </div>
+
+    <div id="status-bar-frost"></div>
     <div id="chat-container"></div>
     <div id="input-container">
+        <div id="config-container">
+            <div class="config-row">
+                <select id="config-server"></select>
+                <select id="config-format">
+                    <option value="Markdown">Markdown</option>
+                    <option value="HTML">HTML</option>
+                </select>
+            </div>
+            <div class="config-row">
+                <select id="config-model"></select>
+                <select id="config-deck"></select>
+            </div>
+        </div>
+        <div id="file-attachments"></div>
+        <div id="prompt-container"></div>
         <div class="input-area">
             <textarea id="message-input" placeholder="输入消息..." rows="1"></textarea>
             <div class="button-container">
@@ -44,11 +70,15 @@
             </div>
         </div>
         <div class="button-group">
-            <button id="new-session-btn" class="session-btn">新会话</button>
-            <button id="show-sessions-btn" class="session-btn">历史会话</button>
+            <button id="new-session-btn" class="session-btn">+</button>
+            <button id="show-sessions-btn" class="session-btn">≡</button>
             <button id="toggle-mode-button" class="session-btn">
-                <span id="mode-indicator">多轮对话</span>
+                <span id="mode-indicator">⇆</span>
             </button>
+            <button id="toggle-config-btn" class="session-btn">⚙</button>
+            <button id="toggle-prompts-btn" class="session-btn">⌘</button>
+            <button id="upload-btn" class="session-btn">⌂</button>
+            <button id="formula-btn" class="session-btn">π</button>
         </div>
     </div>
 
@@ -64,15 +94,23 @@
         </div>
     </div>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/viewerjs@1.11.6/dist/viewer.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/viewerjs@1.11.6/dist/viewer.min.js"></script>
+    <script src="fileupload.js"></script>
     <script src="chat.js"></script>
+    <script src="menu.js"></script>
     <script src="mermaid-mobile.js"></script>
+    <script src="prompt.js"></script>
+    <script src="config.js"></script>
 
     <script>
         // 初始化检查
         window.addEventListener('load', function() {
             console.log('Window loaded');
 
-            // ===== 主题检测 =====
+            // 加载 prompts
+            window.loadPrompts();
+
             const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             document.getElementById('hljs-light').disabled = isDark;
             document.getElementById('hljs-dark').disabled = !isDark;
@@ -154,6 +192,7 @@
               console.log('Mermaid loaded');
             }
         });
+
     </script>
 </body>
 </html> 

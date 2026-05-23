@@ -18,7 +18,7 @@ public class Session {
         this.timestamp = System.currentTimeMillis();
         this.messages = new ArrayList<>();
         // 取前10个字符作为标题，如果不足10个字符则全部使用
-        String escapedTitle = RegexUtil.htmlTagFilter(firstQuestion);                ;
+        String escapedTitle = RegexUtil.htmlTagFilter(firstQuestion);
         this.title = escapedTitle.length() > 30 ?
                 escapedTitle.substring(0, 30) + "..." :
                 escapedTitle;

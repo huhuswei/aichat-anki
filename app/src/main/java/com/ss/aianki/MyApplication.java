@@ -9,6 +9,7 @@ import android.content.Context;
 import androidx.multidex.MultiDexApplication;
 
 import com.jakewharton.threetenabp.AndroidThreeTen;
+import com.liulishuo.filedownloader.FileDownloader;
 
 import okhttp3.OkHttpClient;
 
@@ -30,6 +31,7 @@ public class MyApplication extends MultiDexApplication {
         application = this;
         DarkModeUtils.init(this);
         AndroidThreeTen.init(this);
+        FileDownloader.init(this);
     }
 
     public static Context getContext() {

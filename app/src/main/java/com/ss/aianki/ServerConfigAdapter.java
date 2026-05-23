@@ -16,7 +16,7 @@ public class ServerConfigAdapter extends RecyclerView.Adapter<ServerConfigAdapte
         void onConfigClick(AIServerConfig config);
     }
 
-    public ServerConfigAdapter(List<AIServerConfig> configs, 
+    public ServerConfigAdapter(List<AIServerConfig> configs,
                              OnConfigClickListener editListener,
                              OnConfigClickListener deleteListener) {
         this.configs = configs;
@@ -27,7 +27,7 @@ public class ServerConfigAdapter extends RecyclerView.Adapter<ServerConfigAdapte
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-            .inflate(android.R.layout.simple_list_item_2, parent, false);
+            .inflate(R.layout.item_server_config, parent, false);
         return new ViewHolder(view);
     }
 
@@ -36,7 +36,7 @@ public class ServerConfigAdapter extends RecyclerView.Adapter<ServerConfigAdapte
         AIServerConfig config = configs.get(position);
         holder.text1.setText(config.getName());
         holder.text2.setText(config.getBaseUrl());
-        
+
         holder.itemView.setOnClickListener(v -> editListener.onConfigClick(config));
         holder.itemView.setOnLongClickListener(v -> {
             deleteListener.onConfigClick(config);
@@ -60,8 +60,8 @@ public class ServerConfigAdapter extends RecyclerView.Adapter<ServerConfigAdapte
 
         ViewHolder(View view) {
             super(view);
-            text1 = view.findViewById(android.R.id.text1);
-            text2 = view.findViewById(android.R.id.text2);
+            text1 = view.findViewById(R.id.configName);
+            text2 = view.findViewById(R.id.configUrl);
         }
     }
-} 
+}

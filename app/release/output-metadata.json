@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 128,
-      "versionName": "1.2.8",
-      "outputFile": "AI Anki Helper 1.2.8-release.apk"
+      "versionCode": 200,
+      "versionName": "2.0.0",
+      "outputFile": "AI Chat 2 Anki 2.0.0-release.apk"
     }
   ],
   "elementType": "File"

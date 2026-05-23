@@ -22,6 +22,7 @@ public class Constant {
     }
 
     public static final int REQUEST_CODE_ANKI = 0;
+    public static final int REQUEST_CODE_FILE_CHOOSER = 1;
     public static final String EXTERNAL_STORAGE_DIRECTORY = "ankiai";
     public static final String AIANKI_PACKAGE_NAME = "com.ss.aianki";
 }

@@ -1,49 +1,82 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="BlackBackground" parent="Theme.MaterialComponents.DayNight.DarkActionBar.Bridge">
+    <style name="BlackBackground" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">@android:color/black</item>
     </style>
 
-    <style name="AppTheme" parent="Theme.MaterialComponents.Light.DarkActionBar.Bridge">
-    <!-- Customize your theme here. -->
+    <style name="AppTheme" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="color_footer_background">@color/footer_background</item>
-        <item name="color_footer_pressed">@color/footer_pressed</item>
-        <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
-    </style>
-
-
-    <style name="AppThemePink" parent="Theme.MaterialComponents.Light.DarkActionBar.Bridge">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimaryPink</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDarkPink</item>
-        <item name="colorAccent">@color/colorAccentPink</item>
-        <item name="color_footer_background">@color/footer_background_pink</item>
-        <item name="color_footer_pressed">@color/footer_pressed_pink</item>
-        <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
-    </style>
-
-
-    <style name="AppThemeBlue" parent="Theme.MaterialComponents.Light.DarkActionBar.Bridge">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimaryBlue</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDarkBlue</item>
-        <item name="colorAccent">@color/colorAccentBlue</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">#BBDEFB</item>
+        <item name="colorOnPrimaryContainer">#1A3A5C</item>
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+        <item name="colorSecondaryContainer">#90CAF9</item>
+        <item name="colorOnSecondaryContainer">#1A3A5C</item>
+        <item name="colorSurface">@android:color/white</item>
+        <item name="colorOnSurface">#1C1B1F</item>
+        <item name="colorSurfaceVariant">#E7E0EC</item>
+        <item name="colorOnSurfaceVariant">#49454F</item>
+        <item name="colorError">#B3261E</item>
+        <item name="colorOnError">@android:color/white</item>
         <item name="color_footer_background">@color/footer_background_blue</item>
         <item name="color_footer_pressed">@color/footer_pressed_blue</item>
-        <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
 
-    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-    <style name="AppThemePink.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-    <style name="AppThemeBlue.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+    <style name="AppThemePink" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">#BBDEFB</item>
+        <item name="colorOnPrimaryContainer">#1A3A5C</item>
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+        <item name="colorSecondaryContainer">#90CAF9</item>
+        <item name="colorOnSecondaryContainer">#1A3A5C</item>
+        <item name="colorSurface">@android:color/white</item>
+        <item name="colorOnSurface">#1C1B1F</item>
+        <item name="colorSurfaceVariant">#E7E0EC</item>
+        <item name="colorOnSurfaceVariant">#49454F</item>
+        <item name="colorError">#B3261E</item>
+        <item name="colorOnError">@android:color/white</item>
+        <item name="color_footer_background">@color/footer_background</item>
+        <item name="color_footer_pressed">@color/footer_pressed</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 
-    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
-    <style name="AppThemePink.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
-    <style name="AppThemeBlue.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="AppThemeBlue" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">#BBDEFB</item>
+        <item name="colorOnPrimaryContainer">#1A3A5C</item>
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="colorOnSecondary">@android:color/white</item>
+        <item name="colorSecondaryContainer">#90CAF9</item>
+        <item name="colorOnSecondaryContainer">#1A3A5C</item>
+        <item name="colorSurface">@android:color/white</item>
+        <item name="colorOnSurface">#1C1B1F</item>
+        <item name="colorSurfaceVariant">#E7E0EC</item>
+        <item name="colorOnSurfaceVariant">#49454F</item>
+        <item name="colorError">#B3261E</item>
+        <item name="colorOnError">@android:color/white</item>
+        <item name="color_footer_background">@color/footer_background</item>
+        <item name="color_footer_pressed">@color/footer_pressed</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.Material3.Dark.ActionBar" />
+    <style name="AppThemePink.AppBarOverlay" parent="ThemeOverlay.Material3.Dark.ActionBar" />
+    <style name="AppThemeBlue.AppBarOverlay" parent="ThemeOverlay.Material3.Dark.ActionBar" />
+
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.Material3.Light" />
+    <style name="AppThemePink.PopupOverlay" parent="ThemeOverlay.Material3.Light" />
+    <style name="AppThemeBlue.PopupOverlay" parent="ThemeOverlay.Material3.Light" />
 
 
     <style name="Transparent" parent="AppTheme">
@@ -182,30 +215,28 @@
     <style name="AndroidFilePickerTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/rail_color_accent</item>
+        <item name="colorAccent">@color/colorAccent</item>
         <item name="android:textColor">@color/textColor</item>
         <item name="android:textColorPrimary">@color/textColor</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
     </style>
 
     <style name="AndroidFilePickerThemePink" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/colorPrimaryPink</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDarkPink</item>
-        <item name="colorAccent">@color/colorAccentPink</item>
-        <item name="android:textColor">@color/textColorPink</item>
-        <item name="android:textColorPrimary">@color/textColorPink</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:textColor">@color/textColor</item>
+        <item name="android:textColorPrimary">@color/textColor</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
-        <!--<item name="android:windowTranslucentStatus">true</item>-->
     </style>
 
     <style name="AndroidFilePickerThemeBlue" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/colorPrimaryBlue</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDarkBlue</item>
-        <item name="colorAccent">@color/colorAccentBlue</item>
-        <item name="android:textColor">@color/textColorBlue</item>
-        <item name="android:textColorPrimary">@color/textColorBlue</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:textColor">@color/textColor</item>
+        <item name="android:textColorPrimary">@color/textColor</item>
         <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
-        <!--<item name="android:windowTranslucentStatus">true</item>-->
     </style>
 
 
@@ -289,10 +320,8 @@ B退出，A显示，则此时A执行动画3（android:activityCloseEnterAnimatio
         <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
     </style>
 
-    <style name="BigBangTheme" parent="Theme.AppCompat.Light.Dialog">
+    <style name="BigBangTheme" parent="Theme.Material3.Light.Dialog">
         <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
         <item name="windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
         <item name="android:backgroundDimEnabled">false</item>
@@ -309,10 +338,8 @@ B退出，A显示，则此时A执行动画3（android:activityCloseEnterAnimatio
         <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
     </style>
 
-    <style name="BigBangThemePink" parent="Theme.AppCompat.Light.Dialog">
-        <item name="colorPrimary">@color/colorPrimaryPink</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDarkPink</item>
-        <item name="colorAccent">@color/colorAccentPink</item>
+    <style name="BigBangThemePink" parent="Theme.Material3.Light.Dialog">
+        <item name="colorPrimary">@color/colorPrimary</item>
         <item name="windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
         <item name="android:backgroundDimEnabled">false</item>
@@ -329,10 +356,8 @@ B退出，A显示，则此时A执行动画3（android:activityCloseEnterAnimatio
         <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
     </style>
 
-    <style name="BigBangThemeBlue" parent="Theme.AppCompat.Light.Dialog">
-        <item name="colorPrimary">@color/colorPrimaryBlue</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDarkBlue</item>
-        <item name="colorAccent">@color/colorAccentBlue</item>
+    <style name="BigBangThemeBlue" parent="Theme.Material3.Light.Dialog">
+        <item name="colorPrimary">@color/colorPrimary</item>
         <item name="windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
         <item name="android:backgroundDimEnabled">false</item>

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -9,19 +10,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <RadioButton
+        <com.google.android.material.radiobutton.MaterialRadioButton
             android:id="@+id/themeSystem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="随系统"/>
 
-        <RadioButton
+        <com.google.android.material.radiobutton.MaterialRadioButton
             android:id="@+id/themeLight"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="白天模式"/>
 
-        <RadioButton
+        <com.google.android.material.radiobutton.MaterialRadioButton
             android:id="@+id/themeDark"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -15,6 +14,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -35,9 +35,15 @@ public class PromptActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_prompt);
-        
-        // 启用返回按钮
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        DarkModeUtils.applyImmersiveStatusBar(this);
+
+        // 隐藏 ActionBar
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setNavigationOnClickListener(v -> finish());
         
         dbHelper = new DatabaseHelper(this);
         promptsContainer = findViewById(R.id.promptsContainer);
@@ -46,6 +52,12 @@ public class PromptActivity extends AppCompatActivity {
         fabAddPrompt.setOnClickListener(v -> showAddPromptDialog());
         
         loadPrompts();
+    }
+
+    @Override
+    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        DarkModeUtils.applyImmersiveStatusBar(this);
     }
 
     private void loadPrompts() {
@@ -196,15 +208,6 @@ public class PromptActivity extends AppCompatActivity {
                 newPromptView = null;
             }
         }
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
-            finish();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 
     @Override

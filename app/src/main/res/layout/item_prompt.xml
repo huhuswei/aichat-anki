@@ -27,7 +27,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="标题"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/promptTitle"
@@ -44,7 +44,7 @@
                 android:layout_height="wrap_content"
                 android:hint="Prompt内容"
                 android:layout_marginTop="4dp"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/promptContent"
@@ -62,44 +62,38 @@
                 android:gravity="end"
                 android:layout_marginTop="8dp">
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnDelete"
+                    style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="删除"
                     android:textColor="?attr/colorError"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:padding="8dp"
                     android:layout_weight="1" />
 
-                <Button
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:enabled="false"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:padding="8dp"
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
                     android:layout_weight="1" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCancel"
+                    style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="取消"
-                    android:textColor="?attr/editTextColor"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginStart="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:padding="8dp"
                     android:layout_weight="1" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSave"
+                    style="@style/Widget.Material3.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="保存"
-                    android:textColor="?attr/editTextColor"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginStart="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:padding="8dp"
                     android:layout_weight="1" />
             </LinearLayout>
         </LinearLayout>
@@ -124,7 +118,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="14sp"
-                android:layout_marginTop="4dp"/>
+                android:layout_marginTop="4dp"
+                android:maxLines="2"
+                android:ellipsize="end"/>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

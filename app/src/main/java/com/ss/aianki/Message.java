@@ -9,30 +9,19 @@ public class Message {
     private String id;
     private Long ankiNoteId;  // 添加 Anki 笔记 ID
     private static long counter = 0;
-    private String prompt;
     @SuppressLint("DirectSystemCurrentTimeMillisUsage")
     public Message(String role, String content) {
         this.role = role;
         this.content = content;
         this.id = role + "_" + System.currentTimeMillis() + "_" + (++counter);
-        this.prompt = "";
         System.out.println("创建新消息: ID=" + this.id + ", Role=" + role);  // 添加日志
     }
 
     @SuppressLint("DirectSystemCurrentTimeMillisUsage")
-    public Message(String role, String content, String prompt) {
+    public Message(String role, String content, String id) {
         this.role = role;
         this.content = content;
         this.id = role + "_" + System.currentTimeMillis() + "_" + (++counter);
-        this.prompt = prompt;
-        System.out.println("从数据库加载消息: ID=" + id + ", Role=" + role);  // 添加日志
-    }
-
-    public Message(String role, String content, String prompt, String id) {
-        this.role = role;
-        this.content = content;
-        this.id = id;
-        this.prompt = prompt;
         System.out.println("从数据库加载消息: ID=" + id + ", Role=" + role);  // 添加日志
     }
 
@@ -67,8 +56,5 @@ public class Message {
     public void setAnkiNoteId(Long ankiNoteId) {
         this.ankiNoteId = ankiNoteId;
     }
-
-    public String getPrompt() { return  prompt; }
-    public void setPrompt(String prompt) { this.prompt = prompt; }
 
 }

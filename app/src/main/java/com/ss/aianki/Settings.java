@@ -17,6 +17,9 @@ public class Settings {
     private final static String PREFER_NAME = "settings";    //应用设置名称
     public final static String DARK_MODE_INDEX = "dark_mode_index";
     public final static String CURRENT_DECK_ID = "current_deck_id";
+    public final static String TOGGLE_PANEL = "toggle_panel";
+    public final static String TOGGLE_SIMPLE_UI = "toggle_simple_ui";
+    public final static String FORMULA_MODEL_SOURCE = "formula_model_source";
 
     private SharedPreferences sp;
     private SharedPreferences.Editor editor;

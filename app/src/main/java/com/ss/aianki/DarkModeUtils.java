@@ -7,9 +7,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.os.Build;
+import android.view.View;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 /**
  * @ProjectName: ankihelper
  * @Package: com.mmjang.ankihelper.util
@@ -110,7 +113,7 @@ public class DarkModeUtils {
                 isCheckedArr[i] = false;
         }
 
-        AlertDialog.Builder multiChoiceDialog = new AlertDialog.Builder(activityContext);
+        MaterialAlertDialogBuilder multiChoiceDialog = new MaterialAlertDialogBuilder(activityContext);
         multiChoiceDialog.setTitle("暗黑模式");
         multiChoiceDialog.setSingleChoiceItems(modeNameArr, checkedIndex,
                 new DialogInterface.OnClickListener() {
@@ -139,6 +142,54 @@ public class DarkModeUtils {
         multiChoiceDialog.show();
     }
 
+
+    /**
+     * 设置沉浸式状态栏/导航栏。
+     *
+     * 对于有 Toolbar 的 Activity，状态栏背景使用 colorPrimary 与 Toolbar 融为一体。
+     * 对于全屏 Activity（如 MainActivity），使用透明状态栏实现 Edge-to-Edge。
+     *
+     * @param activity   目标 Activity
+     * @param transparent true = 透明状态栏（Edge-to-Edge），false = colorPrimary 背景
+     */
+    public static void applyImmersiveStatusBar(Activity activity, boolean transparent) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            boolean isDark = isDarkMode(activity);
+            int statusBarColor;
+            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+
+            if (transparent) {
+                // Edge-to-Edge：透明状态栏，布局延伸到状态栏后面
+                statusBarColor = android.graphics.Color.TRANSPARENT;
+                flags |= View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+                // 注意：不使用 LAYOUT_HIDE_NAVIGATION，否则 adjustResize 会失效
+            } else {
+                // 有 Toolbar：使用 colorPrimary 与 Toolbar 保持一致
+                android.util.TypedValue typedValue = new android.util.TypedValue();
+                activity.getTheme().resolveAttribute(android.R.attr.colorPrimary, typedValue, true);
+                statusBarColor = typedValue.data;
+            }
+
+            activity.getWindow().setStatusBarColor(statusBarColor);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!isDark) {
+                    flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!isDark) {
+                    flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                }
+            }
+            activity.getWindow().getDecorView().setSystemUiVisibility(flags);
+        }
+    }
+
+    /** 重载：默认不透明（有 Toolbar 的 Activity 使用） */
+    public static void applyImmersiveStatusBar(Activity activity) {
+        applyImmersiveStatusBar(activity, false);
+    }
 
     public static void initDarkMode(Context activityContext) {
         Settings settings = Settings.getInstance(activityContext);

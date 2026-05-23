@@ -9,6 +9,7 @@ public class AIServerConfig {
     private String baseUrl;
     private String apiKey;
     private String models;  // 多个模型用分号分隔
+    private String provider; // 服务商: openai/azure/gemini/claude/custom
     private float temperature;
     private String lastSelectedModel;  // 添加最后选择的模型字段
 
@@ -17,9 +18,10 @@ public class AIServerConfig {
         // 修改默认值
         this.id = String.valueOf(System.currentTimeMillis());//System.currentTimeMillis());
         this.name = "";
-        this.baseUrl = "https://api.simple.cn/";
+        this.baseUrl = "https://localhost/";
         this.apiKey = "";
         this.models = "";
+        this.provider = "openai";
         this.temperature = 0.6f;
         this.lastSelectedModel = null;  // 默认为 null
     }
@@ -42,6 +44,9 @@ public class AIServerConfig {
     
     public float getTemperature() { return temperature; }
     public void setTemperature(float temperature) { this.temperature = temperature; }
+
+    public String getProvider() { return provider; }
+    public void setProvider(String provider) { this.provider = provider; }
     
     public String getLastSelectedModel() { return lastSelectedModel; }
     public void setLastSelectedModel(String lastSelectedModel) { this.lastSelectedModel = lastSelectedModel; }
